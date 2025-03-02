@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     subgraph "Tournament Creation"
         A[Tournament Creator] -->|Creates Tournament| B(Tournament Contract)
@@ -47,3 +48,4 @@ flowchart TD
     L --> O
     W --> X
     V --> AC
+    ```

@@ -4,7 +4,7 @@
 ![alt text](images/image.png)
 
 ### Project Plan
-1. Game Concept Overview
+#### 1. Game Concept Overview
 Esports Manager is a blockchain-based simulation game where players manage virtual esports teams and compete in tournaments. The game leverages Solana blockchain for its fast transactions and low fees, with AI-driven match simulations as the core gameplay mechanic.
 Key Features:
 
@@ -16,8 +16,8 @@ Key Features:
 - Player marketplace
 - Governance token economy
 
-2. Technical Architecture
-2.1 Blockchain Layer (Solana)
+#### 2. Technical Architecture
+##### 2.1 Blockchain Layer (Solana)
 Player NFT Smart Contracts:
 
 - Implemented using Anchor framework and Metaplex standards
@@ -33,7 +33,7 @@ Each NFT contains:
 
 
 
-### Game Logic Programs:
+##### Game Logic Programs:
 
 - Team management
 - Tournament organization and execution
@@ -41,15 +41,15 @@ Each NFT contains:
 - Training and development system
 - Reward distribution
 
-### Token Economy:
+##### Token Economy:
 
 - SPL token for in-game currency (ESPM Token)
 - Staking mechanisms for team ownership
 - Tournament entry fees and prize pools
 - Governance system for game parameters
 
-2.2 Backend Services (Off-chain)
-AI Simulation Engine:
+##### 2.2 Backend Services (Off-chain)
+##### AI Simulation Engine:
 
 - Neural network trained on player metadata patterns
 - Simulate matches based on team composition and strategies
@@ -57,55 +57,55 @@ AI Simulation Engine:
 - Analyze performance and produce highlights
 - Update player stats based on performance
 
-### Node.js API Services:
+##### Node.js API Services:
 
 - Handle complex queries and data aggregation
 - User account management
 - Tournament management
 - Historical statistics and leaderboards
 
-### Real-time Updates:
+##### Real-time Updates:
 
 - WebSocket server for live match updates
 - Notification system for important events
 - Live marketplace activity
 
-### Data Storage:
+##### Data Storage:
 
 - Redis for caching frequently accessed data
 - MongoDB for historical match data and analytics
 - IPFS for extended metadata storage
 
-2.3 Application Layer
-Team Management Module:
+##### 2.3 Application Layer
+##### Team Management Module:
 
 - Draft and recruit players
 - Set team strategies and compositions
 - Manage training regimens
 - Monitor team chemistry and performance
 
-### Marketplace:
+##### Marketplace:
 
 - Buy/sell/trade player NFTs
 - Auction house for rare players
 - Scout upcoming talent
 - Contract negotiations
 
-### Tournament System:
+##### Tournament System:
 
 - Regular season matches
 - Special tournaments with entry requirements
 - Custom tournament creation
 - Brackets and elimination systems
 
-### AI Simulation Visualization:
+##### AI Simulation Visualization:
 
 - Match playback system
 - Real-time simulation tracking
 - Highlight generation
 - Performance analytics
 
-2.4 User Interfaces
+##### 2.4 User Interfaces
 Web Application:
 
 - React.js/Next.js frontend with TypeScript
@@ -113,21 +113,21 @@ Web Application:
 - D3.js for data visualization
 - Three.js for 3D elements (optional)
 
-### Mobile App:
+##### Mobile App:
 
 - React Native application
 - Touch-optimized interface
 - Push notifications for match results
 
-### Wallet Integration:
+##### Wallet Integration:
 
 - Phantom, Solflare wallet support
 - Simplified onboarding for crypto newcomers
 - Custodial options for mainstream adoption
 
 
-3. Development Roadmap Plan
-Phase 1: Core Development (3-4 months)
+#### 3. Development Roadmap Plan
+##### Phase 1: Core Development (3-4 months)
 
 - Smart contract architecture design and implementation
 - Basic NFT player system
@@ -135,7 +135,7 @@ Phase 1: Core Development (3-4 months)
 - Core web interface
 - Basic marketplace functionality
 
-Phase 2: Enhanced Features (2-3 months)
+##### Phase 2: Enhanced Features (2-3 months)
 
 - Advanced AI simulation engine
 - Tournament system implementation
@@ -143,7 +143,7 @@ Phase 2: Enhanced Features (2-3 months)
 - Enhanced visualization system
 - Mobile app development
 
-Phase 3: Economy & Scaling (2-3 months)
+##### Phase 3: Economy & Scaling (2-3 months)
 
 - Full token economy implementation
 - Governance system
@@ -151,15 +151,15 @@ Phase 3: Economy & Scaling (2-3 months)
 - Performance optimization
 - Security audits
 
-Phase 4: Community & Growth (Ongoing)
+##### Phase 4: Community & Growth (Ongoing)
 
 - Community tournaments
 - Partnerships with esports brands
 - Enhanced graphics and visuals
 - New game modes and features
 
-4. AI Implementation Details
-4.1 Player NFT Metadata Structure
+#### 4. AI Implementation Details
+##### 4.1 Player NFT Metadata Structure
 
 ```bash
 jsonCopy{
@@ -201,16 +201,16 @@ jsonCopy{
   }
 }
 ```
-4.2 AI Simulation Process
+##### 4.2 AI Simulation Process
 
-Pre-match Analysis:
+##### Pre-match Analysis:
 
 - Team composition evaluation
 - Strategy matching against opponent
 - Player synergy calculation
 
 
-Match Simulation:
+##### Match Simulation:
 
 - Turn-based or real-time simulation (depending on esport type)
 - Key moment generation
@@ -218,7 +218,7 @@ Match Simulation:
 - Critical play opportunities based on player "clutch" abilities
 
 
-Results Processing:
+##### Results Processing:
 
 - Match outcome determination
 - Player stat adjustments
@@ -226,7 +226,7 @@ Results Processing:
 - Narrative generation
 
 
-Visualization:
+##### Visualization:
 
 - Text-based play-by-play
 - 2D visualization of key moments
@@ -235,30 +235,30 @@ Visualization:
 
 
 
-5. User Experience Flow
+#### 5. User Experience Flow
 
-Onboarding:
+##### Onboarding:
 
 - Wallet connection
 - Tutorial system
 - Starter pack (basic team)
 
 
-Team Building:
+##### Team Building:
 
 - Scout marketplace for players
 - Draft system for new players
 - Team strategy setting
 
 
-Training & Development:
+##### Training & Development:
 
 - Allocate training resources
 - Specific skill development
 - Coaching and mentorship
 
 
-Competition:
+##### Competition:
 
 - Regular season matches
 - Tournament participation
@@ -266,7 +266,7 @@ Competition:
 - Receive rewards based on performance
 
 
-Management:
+##### Management:
 
 - Player trading
 - Strategy adaptation
@@ -275,9 +275,9 @@ Management:
 
 
 
-6. Business Model
+#### 6. Business Model
 
-Primary Revenue Streams:
+##### Primary Revenue Streams:
 
 - Initial NFT sales (starter packs)
 - Marketplace fees (% of trades)
@@ -285,7 +285,7 @@ Primary Revenue Streams:
 - Premium features
 
 
-Token Utility:
+##### Token Utility:
 
 - Governance rights
 - Staking rewards
@@ -293,7 +293,7 @@ Token Utility:
 - Training boosts
 
 
-Sustainability Mechanisms:
+##### Sustainability Mechanisms:
 
 - Treasury for ongoing development
 - Player retirement/new generation system
@@ -301,8 +301,8 @@ Sustainability Mechanisms:
 
 
 
-7. Technical Stack Details
-Frontend:
+#### 7. Technical Stack Details
+##### Frontend:
 
 - React/Next.js with TypeScript
 - Redux for state management
@@ -310,7 +310,7 @@ Frontend:
 - D3.js for data visualization
 - Ethers.js/Web3.js for blockchain interaction
 
-Backend:
+##### Backend:
 
 - Node.js/Express for API
 - Socket.io for real-time updates
@@ -318,13 +318,13 @@ Backend:
 - Redis for caching
 - MongoDB for analytics data
 
-Blockchain:
+##### Blockchain:
 
 - Solana (Anchor framework)
 - Metaplex for NFT standards
 - SPL tokens for in-game currency
 
-DevOps:
+##### DevOps:
 
 - AWS/GCP for hosting
 - CI/CD pipeline with GitHub Actions

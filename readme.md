@@ -6,7 +6,8 @@
 ### Project Plan
 #### 1. Game Concept Overview
 Esports Manager is a blockchain-based simulation game where players manage virtual esports teams and compete in tournaments. The game leverages Solana blockchain for its fast transactions and low fees, with AI-driven match simulations as the core gameplay mechanic.
-Key Features:
+
+##### Key Features:
 
 - Player NFTs with unique attributes and stats
 - Team management and strategic decision-making

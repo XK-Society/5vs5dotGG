@@ -1,332 +1,243 @@
 # Esport Dream League
 
-## Architecture Plan
-![alt text](images/image.png)
-
-### Project Plan
-#### 1. Game Concept Overview
-Esports Manager is a blockchain-based simulation game where players manage virtual esports teams and compete in tournaments. The game leverages Solana blockchain for its fast transactions and low fees, with AI-driven match simulations as the core gameplay mechanic.
-
-##### Key Features:
-
-- Player NFTs with unique attributes and stats
-- Team management and strategic decision-making
-- AI-driven match simulations based on NFT metadata
-- Tournament system with rewards
-- Training and development system
-- Player marketplace
-- Governance token economy
-
-#### 2. Technical Architecture
-##### 2.1 Blockchain Layer (Solana)
-Player NFT Smart Contracts:
-
-- Implemented using Anchor framework and Metaplex standards
-
-Each NFT contains:
-
-- Base attributes (skill level, reaction time, game knowledge)
-- Specialized abilities (champion/hero proficiency, strategy adaptability)
-- Experience and improvement potential
-- Historical performance data
-- Visual representation
-- Rarity traits
+A blockchain-based esports management simulation where players collect athlete NFTs, form teams, and compete in AI-driven tournaments.
 
 
+## Overview
 
-##### Game Logic Programs:
+Esport Dream League combines NFT collectibles with AI match simulation to create an immersive esports management experience. The platform allows users to:
 
-- Team management
-- Tournament organization and execution
-- Match result verification
-- Training and development system
-- Reward distribution
+- Collect and train esports athlete NFTs
+- Form teams with complementary player skills
+- Compete in tournaments against other users
+- Earn rewards through victories and progression
+- Create exclusive athletes as verified creators
 
-##### Token Economy:
+## Architecture
 
-- SPL token for in-game currency (ESPM Token)
-- Staking mechanisms for team ownership
-- Tournament entry fees and prize pools
-- Governance system for game parameters
+The project uses a hybrid architecture that combines Solana blockchain for NFTs and game state with an off-chain AI engine for match simulations.
 
-##### 2.2 Backend Services (Off-chain)
-##### AI Simulation Engine:
+### Core Components
 
-- Neural network trained on player metadata patterns
-- Simulate matches based on team composition and strategies
-- Generate detailed play-by-play commentary
-- Analyze performance and produce highlights
-- Update player stats based on performance
+#### Blockchain Layer (Solana)
+- **Player NFT System**: A dual-structure approach with Metaplex NFTs for marketplace compatibility and custom PDAs for game data
+- **Team Management**: Create teams, manage rosters, and track performance
+- **Tournament System**: Run competitive structures with entry requirements and prizes
+- **Creator System**: Allow authorized creators to mint exclusive athlete NFTs
 
-##### Node.js API Services:
+#### Off-Chain Components
+- **Match Simulation Engine**: JavaScript-based simulation that processes player and team data
+- **Web & Mobile Interface**: React-based UI for managing NFTs, teams, and tournaments
 
-- Handle complex queries and data aggregation
-- User account management
-- Tournament management
-- Historical statistics and leaderboards
+## Getting Started
 
-##### Real-time Updates:
+### Prerequisites
+- [Rust](https://www.rust-lang.org/tools/install) 1.65+
+- [Node.js](https://nodejs.org/en/download/) 16+
+- [Solana Tool Suite](https://docs.solana.com/cli/install-solana-cli-tools) 1.14+
+- [Anchor Framework](https://project-serum.github.io/anchor/getting-started/installation.html) 0.27+
 
-- WebSocket server for live match updates
-- Notification system for important events
-- Live marketplace activity
-
-##### Data Storage:
-
-- Redis for caching frequently accessed data
-- MongoDB for historical match data and analytics
-- IPFS for extended metadata storage
-
-##### 2.3 Application Layer
-##### Team Management Module:
-
-- Draft and recruit players
-- Set team strategies and compositions
-- Manage training regimens
-- Monitor team chemistry and performance
-
-##### Marketplace:
-
-- Buy/sell/trade player NFTs
-- Auction house for rare players
-- Scout upcoming talent
-- Contract negotiations
-
-##### Tournament System:
-
-- Regular season matches
-- Special tournaments with entry requirements
-- Custom tournament creation
-- Brackets and elimination systems
-
-##### AI Simulation Visualization:
-
-- Match playback system
-- Real-time simulation tracking
-- Highlight generation
-- Performance analytics
-
-##### 2.4 User Interfaces
-Web Application:
-
-- React.js/Next.js frontend with TypeScript
-- TailwindCSS for responsive design
-- D3.js for data visualization
-- Three.js for 3D elements (optional)
-
-##### Mobile App:
-
-- React Native application
-- Touch-optimized interface
-- Push notifications for match results
-
-##### Wallet Integration:
-
-- Phantom, Solflare wallet support
-- Simplified onboarding for crypto newcomers
-- Custodial options for mainstream adoption
-
-
-#### 3. Development Roadmap Plan
-##### Phase 1: Core Development (3-4 months)
-
-- Smart contract architecture design and implementation
-- Basic NFT player system
-- Simple AI simulation model
-- Core web interface
-- Basic marketplace functionality
-
-##### Phase 2: Enhanced Features (2-3 months)
-
-- Advanced AI simulation engine
-- Tournament system implementation
-- Training and development mechanics
-- Enhanced visualization system
-- Mobile app development
-
-##### Phase 3: Economy & Scaling (2-3 months)
-
-- Full token economy implementation
-- Governance system
-- Advanced marketplace features
-- Performance optimization
-- Security audits
-
-##### Phase 4: Community & Growth (Ongoing)
-
-- Community tournaments
-- Partnerships with esports brands
-- Enhanced graphics and visuals
-- New game modes and features
-
-#### 4. AI Implementation Details
-##### 4.1 Player NFT Metadata Structure
+### Installation
 
 ```bash
-jsonCopy{
-  "player": {
-    "name": "CyberShot99",
-    "position": "Mid Laner",
-    "specialization": "Assassins",
-    "baseStats": {
-      "mechanical": 85,
-      "gameKnowledge": 78,
-      "teamCommunication": 70,
-      "adaptability": 82,
-      "consistency": 76
-    },
-    "specialAbilities": [
-      {"name": "Clutch Factor", "value": 88},
-      {"name": "Map Awareness", "value": 81}
-    ],
-    "gameSpecific": {
-      "championPool": [
-        {"champion": "Zed", "proficiency": 92},
-        {"champion": "Akali", "proficiency": 89},
-        {"champion": "Syndra", "proficiency": 76}
-      ]
-    },
-    "experience": 2450,
-    "potential": 92,
-    "form": 88,
-    "performanceHistory": [
-      // Recent match results and individual performance
-    ]
-  },
-  "visual": {
-    "avatar": "ipfs://QmHash...",
-    "rarity": "Epic",
-    "customizations": {
-      // Visual customization options
-    }
-  }
+# Clone the repository
+git clone https://github.com/your-org/esport-dream-league.git
+cd esport-dream-league
+
+# Install dependencies
+yarn install
+
+# Build the Solana program
+anchor build
+
+# Deploy to localnet
+anchor deploy
+
+# Start the frontend
+cd app
+yarn start
+```
+
+## Smart Contract Overview
+
+### Player NFT System
+
+Players are represented as NFTs with their game data stored in PDAs:
+
+```rust
+pub struct PlayerAccount {
+    pub owner: Pubkey,
+    pub mint: Pubkey,  // Link to Metaplex NFT
+    pub name: String,
+    pub position: String,
+    
+    // Core stats (0-100 scale)
+    pub mechanical: u8,
+    pub game_knowledge: u8,
+    pub team_communication: u8,
+    pub adaptability: u8,
+    pub consistency: u8,
+    
+    // Special abilities and performance metrics
+    pub special_abilities: Vec<SpecialAbility>,
+    pub experience: u32,
+    pub matches_played: u32,
+    pub wins: u32,
+    pub mvp_count: u32,
+    pub form: u8,
+    pub potential: u8,
+    
+    // Other metadata
+    pub team: Option<Pubkey>,
+    pub creator: Option<Pubkey>,
+    pub is_exclusive: bool,
 }
 ```
-##### 4.2 AI Simulation Process
 
-##### Pre-match Analysis:
+### Team Management
 
-- Team composition evaluation
-- Strategy matching against opponent
-- Player synergy calculation
+Teams group players together for competitions:
 
+```rust
+pub struct TeamAccount {
+    pub owner: Pubkey,
+    pub name: String,
+    pub collection_mint: Option<Pubkey>,
+    pub logo_uri: String,
+    pub roster: Vec<RosterPosition>,
+    pub statistics: TeamStatistics,
+}
+```
 
-##### Match Simulation:
+### Tournament System
 
-- Turn-based or real-time simulation (depending on esport type)
-- Key moment generation
-- Player performance based on metadata + situational modifiers
-- Critical play opportunities based on player "clutch" abilities
+Tournaments provide competitive structures with brackets and prizes:
 
+```rust
+pub struct TournamentAccount {
+    pub authority: Pubkey,
+    pub name: String,
+    pub entry_fee: u64,
+    pub prize_pool: u64,
+    pub max_teams: u8,
+    pub registered_teams: Vec<Pubkey>,
+    pub matches: Vec<TournamentMatch>,
+    pub status: TournamentStatus,
+}
+```
 
-##### Results Processing:
+### Creator System
 
-- Match outcome determination
-- Player stat adjustments
-- Experience and form updates
-- Narrative generation
+Verified creators can mint exclusive athlete NFTs:
 
+```rust
+pub struct CreatorAccount {
+    pub authority: Pubkey,
+    pub name: String,
+    pub verified: bool,
+    pub creator_fee_basis_points: u16,
+    pub collections_created: Vec<Pubkey>,
+    pub total_athletes_created: u32,
+}
+```
 
-##### Visualization:
+## Simulation Engine
 
-- Text-based play-by-play
-- 2D visualization of key moments
-- Statistical summary and graphs
-- Highlight identification
+The Match Simulation Engine uses JavaScript to process player and team metadata to generate realistic match outcomes. The engine:
 
+1. Calculates team performance based on player attributes
+2. Generates significant events throughout the match
+3. Determines outcomes based on performance differentials
+4. Produces commentary and statistics
+5. Generates metadata updates for blockchain transactions
 
+## API Reference
 
-#### 5. User Experience Flow
+### Player Management
 
-##### Onboarding:
+```rust
+// Initialize a new player NFT
+initialize_player(name, position, game_specific_data, uri)
 
-- Wallet connection
-- Tutorial system
-- Starter pack (basic team)
+// Update player after a match
+update_player_performance(match_id, win, mvp, exp_gained, stat_changes)
 
+// Train a specific player stat
+train_player(training_type, intensity)
+```
 
-##### Team Building:
+### Team Management
 
-- Scout marketplace for players
-- Draft system for new players
-- Team strategy setting
+```rust
+// Create a new team
+create_team(name, logo_uri)
 
+// Add player to team
+add_player_to_team(player_mint, position)
 
-##### Training & Development:
+// Remove player from team
+remove_player_from_team(player_mint)
+```
 
-- Allocate training resources
-- Specific skill development
-- Coaching and mentorship
+### Tournament System
 
+```rust
+// Create a tournament
+create_tournament(name, entry_fee, start_time, max_teams)
 
-##### Competition:
+// Register team for tournament
+register_team_for_tournament(tournament_id, team_id)
 
-- Regular season matches
-- Tournament participation
-- Watch AI simulations
-- Receive rewards based on performance
+// Record match result
+record_match_result(match_id, winner_id, loser_id, score, match_data)
+```
 
+### Creator System
 
-##### Management:
+```rust
+// Register as a creator
+register_creator(name, fee_basis_points)
 
-- Player trading
-- Strategy adaptation
-- Team chemistry management
-- Financial resource allocation
+// Create exclusive athlete NFT
+create_exclusive_athlete(name, position, uri, predefined_stats)
+```
 
+## Development Roadmap
 
+### Phase 1: Core System (Current)
+- Player NFT framework
+- Team management
+- Basic tournament structure
+- Simulation engine prototype
 
-#### 6. Business Model
+### Phase 2: Enhanced Gameplay
+- Advanced tournament system
+- Creator exclusive athletes
+- Upgraded simulation engine
+- Performance analytics
 
-##### Primary Revenue Streams:
+### Phase 3: Economy & Scale
+- In-game token economy
+- Governance system
+- Performance optimizations
+- Mobile application
 
-- Initial NFT sales (starter packs)
-- Marketplace fees (% of trades)
-- Tournament entry fees
-- Premium features
+### Phase 4: Community & Growth
+- Community tournaments
+- Esports brand partnerships
+- Enhanced graphics and UI
+- New game modes
 
+## Contributing
 
-##### Token Utility:
+Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
-- Governance rights
-- Staking rewards
-- Tournament prizes
-- Training boosts
+## License
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-##### Sustainability Mechanisms:
+## Acknowledgments
 
-- Treasury for ongoing development
-- Player retirement/new generation system
-- Seasonal updates and new content
-
-
-
-#### 7. Technical Stack Details
-##### Frontend:
-
-- React/Next.js with TypeScript
-- Redux for state management
-- TailwindCSS for styling
-- D3.js for data visualization
-- Ethers.js/Web3.js for blockchain interaction
-
-##### Backend:
-
-- Node.js/Express for API
-- Socket.io for real-time updates
-- TensorFlow/PyTorch for AI models (with Node.js integration)
-- Redis for caching
-- MongoDB for analytics data
-
-##### Blockchain:
-
-- Solana (Anchor framework)
-- Metaplex for NFT standards
-- SPL tokens for in-game currency
-
-##### DevOps:
-
-- AWS/GCP for hosting
-- CI/CD pipeline with GitHub Actions
-- Monitoring with Datadog or similar
+- [Solana](https://solana.com/)
+- [Metaplex](https://www.metaplex.com/)
+- [Anchor Framework](https://project-serum.github.io/anchor/)

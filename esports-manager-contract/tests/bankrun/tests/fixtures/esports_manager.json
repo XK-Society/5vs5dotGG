@@ -1,0 +1,1611 @@
+{
+  "address": "2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ",
+  "metadata": {
+    "name": "esports_manager",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "add_player_to_team",
+      "discriminator": [
+        171,
+        84,
+        106,
+        209,
+        207,
+        108,
+        255,
+        216
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "team_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "team_account.name",
+                "account": "TeamAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_mint"
+        }
+      ],
+      "args": [
+        {
+          "name": "player_mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "position",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "add_special_ability",
+      "discriminator": [
+        40,
+        25,
+        207,
+        183,
+        71,
+        26,
+        58,
+        226
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_account.mint",
+                "account": "PlayerAccount"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "ability_name",
+          "type": "string"
+        },
+        {
+          "name": "ability_value",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "create_exclusive_athlete",
+      "discriminator": [
+        148,
+        18,
+        163,
+        71,
+        88,
+        94,
+        161,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  97,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "predefined_stats",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "PlayerStats"
+              }
+            }
+          }
+        },
+        {
+          "name": "collection_id",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "max_editions",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_team",
+      "discriminator": [
+        122,
+        161,
+        98,
+        67,
+        178,
+        128,
+        116,
+        113
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "team_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "arg",
+                "path": "name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "logo_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "create_tournament",
+      "discriminator": [
+        158,
+        137,
+        233,
+        231,
+        73,
+        132,
+        191,
+        68
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tournament_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114,
+                  110,
+                  97,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "entry_fee",
+          "type": "u64"
+        },
+        {
+          "name": "start_time",
+          "type": "i64"
+        },
+        {
+          "name": "max_teams",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_player",
+      "discriminator": [
+        79,
+        249,
+        88,
+        177,
+        220,
+        62,
+        56,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "position",
+          "type": "string"
+        },
+        {
+          "name": "game_specific_data",
+          "type": "bytes"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "record_match_result",
+      "discriminator": [
+        37,
+        251,
+        4,
+        178,
+        56,
+        184,
+        50,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tournament_account",
+          "writable": true
+        },
+        {
+          "name": "winner_team",
+          "writable": true
+        },
+        {
+          "name": "loser_team",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "match_id",
+          "type": "string"
+        },
+        {
+          "name": "winner_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "loser_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "score",
+          "type": {
+            "array": [
+              "u8",
+              2
+            ]
+          }
+        },
+        {
+          "name": "match_data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "register_creator",
+      "discriminator": [
+        85,
+        3,
+        194,
+        210,
+        164,
+        140,
+        160,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  97,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "fee_basis_points",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "register_team_for_tournament",
+      "discriminator": [
+        224,
+        136,
+        57,
+        37,
+        8,
+        79,
+        74,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "team_owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "team_account",
+          "writable": true
+        },
+        {
+          "name": "tournament_account",
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "tournament_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "team_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "remove_player_from_team",
+      "discriminator": [
+        22,
+        196,
+        177,
+        237,
+        211,
+        16,
+        213,
+        155
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "team_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "team_account.name",
+                "account": "TeamAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_mint",
+          "docs": [
+            "The mint of the player NFT"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "player_mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "train_player",
+      "discriminator": [
+        137,
+        16,
+        65,
+        189,
+        87,
+        131,
+        44,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_account.mint",
+                "account": "PlayerAccount"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "training_type",
+          "type": {
+            "defined": {
+              "name": "TrainingType"
+            }
+          }
+        },
+        {
+          "name": "intensity",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "update_player_performance",
+      "discriminator": [
+        112,
+        173,
+        136,
+        202,
+        11,
+        116,
+        149,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_account.mint",
+                "account": "PlayerAccount"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "match_id",
+          "type": "string"
+        },
+        {
+          "name": "win",
+          "type": "bool"
+        },
+        {
+          "name": "mvp",
+          "type": "bool"
+        },
+        {
+          "name": "exp_gained",
+          "type": "u32"
+        },
+        {
+          "name": "mechanical_change",
+          "type": "i8"
+        },
+        {
+          "name": "game_knowledge_change",
+          "type": "i8"
+        },
+        {
+          "name": "team_communication_change",
+          "type": "i8"
+        },
+        {
+          "name": "adaptability_change",
+          "type": "i8"
+        },
+        {
+          "name": "consistency_change",
+          "type": "i8"
+        },
+        {
+          "name": "form_change",
+          "type": "i8"
+        },
+        {
+          "name": "match_stats",
+          "type": "bytes"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CreatorAccount",
+      "discriminator": [
+        222,
+        163,
+        32,
+        169,
+        204,
+        8,
+        200,
+        32
+      ]
+    },
+    {
+      "name": "PlayerAccount",
+      "discriminator": [
+        224,
+        184,
+        224,
+        50,
+        98,
+        72,
+        48,
+        236
+      ]
+    },
+    {
+      "name": "TeamAccount",
+      "discriminator": [
+        174,
+        133,
+        172,
+        53,
+        28,
+        209,
+        165,
+        72
+      ]
+    },
+    {
+      "name": "TournamentAccount",
+      "discriminator": [
+        60,
+        80,
+        64,
+        99,
+        120,
+        6,
+        22,
+        117
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "UnauthorizedAccess",
+      "msg": "Unauthorized access to account"
+    },
+    {
+      "code": 6001,
+      "name": "AbilityAlreadyExists",
+      "msg": "Player already has this ability"
+    },
+    {
+      "code": 6002,
+      "name": "PlayerAlreadyOnTeam",
+      "msg": "Player is already on a team"
+    },
+    {
+      "code": 6003,
+      "name": "PlayerNotOnTeam",
+      "msg": "Player is not on this team"
+    },
+    {
+      "code": 6004,
+      "name": "TeamRosterFull",
+      "msg": "Team roster is full"
+    },
+    {
+      "code": 6005,
+      "name": "PositionAlreadyFilled",
+      "msg": "Position is already filled on this team"
+    },
+    {
+      "code": 6006,
+      "name": "TournamentFull",
+      "msg": "Tournament is already full"
+    },
+    {
+      "code": 6007,
+      "name": "TournamentAlreadyStarted",
+      "msg": "Tournament has already started"
+    },
+    {
+      "code": 6008,
+      "name": "TeamAlreadyRegistered",
+      "msg": "Team is already registered for this tournament"
+    },
+    {
+      "code": 6009,
+      "name": "CreatorNotVerified",
+      "msg": "Creator is not verified"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidFeeBasisPoints",
+      "msg": "Fee basis points must be between 0-1000 (0-10%)"
+    },
+    {
+      "code": 6011,
+      "name": "MatchAlreadyRecorded",
+      "msg": "Match has already been recorded"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidTournamentParameters",
+      "msg": "Invalid tournament parameters"
+    },
+    {
+      "code": 6013,
+      "name": "MatchNotFound",
+      "msg": "Match not found in tournament"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidTeamId",
+      "msg": "Invalid team ID"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidTournamentId",
+      "msg": "Invalid tournament ID"
+    }
+  ],
+  "types": [
+    {
+      "name": "CreatorAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "verified",
+            "type": "bool"
+          },
+          {
+            "name": "creator_fee_basis_points",
+            "type": "u16"
+          },
+          {
+            "name": "collections_created",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "total_athletes_created",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchPerformance",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "match_id",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "win",
+            "type": "bool"
+          },
+          {
+            "name": "mvp",
+            "type": "bool"
+          },
+          {
+            "name": "exp_gained",
+            "type": "u32"
+          },
+          {
+            "name": "stats",
+            "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "position",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "last_updated",
+            "type": "i64"
+          },
+          {
+            "name": "team",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "mechanical",
+            "type": "u8"
+          },
+          {
+            "name": "game_knowledge",
+            "type": "u8"
+          },
+          {
+            "name": "team_communication",
+            "type": "u8"
+          },
+          {
+            "name": "adaptability",
+            "type": "u8"
+          },
+          {
+            "name": "consistency",
+            "type": "u8"
+          },
+          {
+            "name": "special_abilities",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "SpecialAbility"
+                }
+              }
+            }
+          },
+          {
+            "name": "game_specific_data",
+            "type": "bytes"
+          },
+          {
+            "name": "experience",
+            "type": "u32"
+          },
+          {
+            "name": "matches_played",
+            "type": "u32"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "mvp_count",
+            "type": "u32"
+          },
+          {
+            "name": "form",
+            "type": "u8"
+          },
+          {
+            "name": "potential",
+            "type": "u8"
+          },
+          {
+            "name": "rarity",
+            "type": {
+              "defined": {
+                "name": "Rarity"
+              }
+            }
+          },
+          {
+            "name": "creator",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "is_exclusive",
+            "type": "bool"
+          },
+          {
+            "name": "performance_history",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "MatchPerformance"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mechanical",
+            "type": "u8"
+          },
+          {
+            "name": "game_knowledge",
+            "type": "u8"
+          },
+          {
+            "name": "team_communication",
+            "type": "u8"
+          },
+          {
+            "name": "adaptability",
+            "type": "u8"
+          },
+          {
+            "name": "consistency",
+            "type": "u8"
+          },
+          {
+            "name": "potential",
+            "type": "u8"
+          },
+          {
+            "name": "form",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Rarity",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Common"
+          },
+          {
+            "name": "Uncommon"
+          },
+          {
+            "name": "Rare"
+          },
+          {
+            "name": "Epic"
+          },
+          {
+            "name": "Legendary"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RosterPosition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "position",
+            "type": "string"
+          },
+          {
+            "name": "added_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SpecialAbility",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "value",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TeamAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "collection_mint",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "last_updated",
+            "type": "i64"
+          },
+          {
+            "name": "roster",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "RosterPosition"
+                }
+              }
+            }
+          },
+          {
+            "name": "statistics",
+            "type": {
+              "defined": {
+                "name": "TeamStatistics"
+              }
+            }
+          },
+          {
+            "name": "match_history",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "TeamMatchResult"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TeamMatchResult",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "match_id",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "opponent",
+            "type": "pubkey"
+          },
+          {
+            "name": "win",
+            "type": "bool"
+          },
+          {
+            "name": "score",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "tournament_id",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TeamStatistics",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "matches_played",
+            "type": "u32"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "losses",
+            "type": "u32"
+          },
+          {
+            "name": "tournament_wins",
+            "type": "u32"
+          },
+          {
+            "name": "avg_mechanical",
+            "type": "u8"
+          },
+          {
+            "name": "avg_game_knowledge",
+            "type": "u8"
+          },
+          {
+            "name": "avg_team_communication",
+            "type": "u8"
+          },
+          {
+            "name": "synergy_score",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TournamentAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "entry_fee",
+            "type": "u64"
+          },
+          {
+            "name": "prize_pool",
+            "type": "u64"
+          },
+          {
+            "name": "start_time",
+            "type": "i64"
+          },
+          {
+            "name": "end_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "max_teams",
+            "type": "u8"
+          },
+          {
+            "name": "registered_teams",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "matches",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "TournamentMatch"
+                }
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TournamentStatus"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TournamentMatch",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "match_id",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "team_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "team_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "score",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "round",
+            "type": "u8"
+          },
+          {
+            "name": "completed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TournamentStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Registration"
+          },
+          {
+            "name": "InProgress"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Canceled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TrainingType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Mechanical"
+          },
+          {
+            "name": "GameKnowledge"
+          },
+          {
+            "name": "TeamCommunication"
+          },
+          {
+            "name": "Adaptability"
+          },
+          {
+            "name": "Consistency"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -104,13 +104,19 @@ pub mod esports_manager {
         team::remove_player_from_team(ctx, player_mint)
     }
 
-    // Creator System Functions
     pub fn register_creator(
         ctx: Context<RegisterCreator>,
         name: String,
         fee_basis_points: u16,
     ) -> Result<()> {
         creator::register_creator(ctx, name, fee_basis_points)
+    }
+
+    // In lib.rs, inside the #[program] pub mod esports_manager { ... } block:
+
+    // Add this after register_creator
+    pub fn verify_creator(ctx: Context<VerifyCreator>) -> Result<()> {
+        creator::verify_creator(ctx)
     }
 
     pub fn create_exclusive_athlete(

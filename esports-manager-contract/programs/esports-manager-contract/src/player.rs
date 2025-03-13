@@ -315,6 +315,7 @@ pub fn update_player_performance(
 }
 
 // Train player (improve specific stat)
+// In player.rs
 pub fn train_player(
     ctx: Context<TrainPlayer>,
     training_type: TrainingType,
@@ -324,11 +325,16 @@ pub fn train_player(
     let clock = Clock::get()?;
     
     // Calculate training effectiveness (based on intensity, player form, and some randomness)
-    let effectiveness = ((intensity as u16 * player_account.form as u16) / 100) as u8;
+    // Use checked math to prevent overflow
+    let effectiveness = u8::try_from(
+        (intensity as u16).saturating_mul(player_account.form as u16) / 100
+    ).unwrap_or(255);
+    
     let random_factor = (get_random_value(&clock, 0) % 5) as i8 - 2; // -2 to +2 range
     
     // Calculate stat improvement (1-5 points typically)
-    let improvement = std::cmp::max(1, effectiveness / 20 + random_factor as u8) as i8;
+    // Use saturating operations to prevent overflow
+    let improvement = std::cmp::max(1, effectiveness.saturating_div(20).saturating_add(random_factor.max(0) as u8)) as i8;
     
     // Apply improvement to the specific stat
     match training_type {
@@ -341,7 +347,7 @@ pub fn train_player(
     
     // Training affects form (high intensity can reduce form)
     if intensity > 70 {
-        player_account.form = std::cmp::max(1, player_account.form - (intensity - 70) / 10);
+        player_account.form = std::cmp::max(1, player_account.form.saturating_sub((intensity - 70) / 10));
     }
     
     // Update last updated timestamp

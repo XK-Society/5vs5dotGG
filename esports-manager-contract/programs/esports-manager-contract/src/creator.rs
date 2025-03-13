@@ -3,6 +3,7 @@ use anchor_spl::token::{Mint, Token};
 use crate::errors::ErrorCode;
 use crate::player::{PlayerAccount, PlayerStats, Rarity, SpecialAbility};
 use crate::utils::safe_update_stat;
+use crate::utils::is_admin;
 
 // Creator Account Structure
 #[account]
@@ -46,6 +47,21 @@ pub struct RegisterCreator<'info> {
     
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+}
+
+// Context for verifying a creator
+#[derive(Accounts)]
+pub struct VerifyCreator<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    
+    #[account(
+        mut,
+        seeds = [b"creator", creator_account.authority.as_ref()],
+        bump,
+        constraint = is_admin(&admin.key()) @ ErrorCode::UnauthorizedAccess
+    )]
+    pub creator_account: Account<'info, CreatorAccount>,
 }
 
 // Context for creating an exclusive athlete
@@ -106,6 +122,17 @@ pub fn register_creator(
     
     Ok(())
 }
+
+pub fn verify_creator(ctx: Context<VerifyCreator>) -> Result<()> {
+    // Set the verified flag to true
+    let creator_account = &mut ctx.accounts.creator_account;
+    creator_account.verified = true;
+    
+    msg!("Creator successfully verified");
+    
+    Ok(())
+}
+
 
 // Create an exclusive athlete NFT
 pub fn create_exclusive_athlete(

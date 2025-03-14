@@ -342,6 +342,7 @@ export default function MatchSimulator() {
     setMatchResult(null);
   };
 
+
   return (
     <div className="space-y-6">
       <Card>

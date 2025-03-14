@@ -1,8 +1,13 @@
 // src/components/layout/header.tsx
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+'use client';
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useWallet } from '@/providers/WalletProvider';
 
 export default function Header() {
+  const { connected, connecting, connectWallet, disconnect, walletName } = useWallet();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-screen-2xl items-center">
@@ -29,9 +34,17 @@ export default function Header() {
           </nav>
         </div>
         <div className="ml-auto flex items-center space-x-4">
-          <Button variant="secondary">Connect Wallet</Button>
+          {connected ? (
+            <Button variant="secondary" onClick={disconnect}>
+              Disconnect {walletName}
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={connectWallet} disabled={connecting}>
+              {connecting ? 'Connecting...' : 'Connect Wallet'}
+            </Button>
+          )}
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { TeamAccount, PlayerAccount, Rarity } from '@/lib/types/program';
 import { SimulatedMatchResult } from '@/lib/simulation/engine';
 import { useWallet } from '@/providers/WalletProvider';
+import { recordMatchResultOnChain } from '@/lib/api/match-service';
 
 interface MatchResultsProps {
   matchResult: SimulatedMatchResult;
@@ -61,10 +62,11 @@ export default function MatchResults({
 }: MatchResultsProps) {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { connected } = useWallet();
+  const [transactionSignatures, setTransactionSignatures] = useState<string[]>([]);
+  const { connected, publicKey } = useWallet();
 
   const recordMatchOnChain = async () => {
-    if (!connected) {
+    if (!connected || !publicKey) {
       setErrorMessage('Please connect your wallet to record the match results on-chain.');
       return;
     }
@@ -72,13 +74,16 @@ export default function MatchResults({
     try {
       setRecordingState('recording');
       
-      // In a real implementation, you would call your match service here
-      // to record the match results on the blockchain
+      // Call the match service to record the match result on the blockchain
+      const result = await recordMatchResultOnChain(matchResult);
       
-      // Simulate delay and success for demo purposes
-      setTimeout(() => {
+      if (result.success) {
         setRecordingState('success');
-      }, 2000);
+        setTransactionSignatures(result.transactions || []);
+      } else {
+        setRecordingState('error');
+        setErrorMessage(result.error || 'An error occurred while recording the match results');
+      }
     } catch (error) {
       console.error('Error recording match on chain:', error);
       setRecordingState('error');
@@ -263,22 +268,44 @@ export default function MatchResults({
             )}
             
             {recordingState === 'success' && (
-              <div className="flex items-center space-x-2 text-green-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <p>Match results successfully recorded on the blockchain!</p>
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center space-x-2 text-green-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <p>Match results successfully recorded on the blockchain!</p>
+                </div>
+                
+                {transactionSignatures.length > 0 && (
+                  <div className="mt-2 text-sm">
+                    <p className="text-muted-foreground mb-1">Transaction signatures:</p>
+                    <ul className="space-y-1">
+                      {transactionSignatures.map((sig, i) => (
+                        <li key={i} className="break-all">
+                          <a 
+                            href={`https://explorer.solana.com/tx/${sig}?cluster=devnet`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {sig}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
             

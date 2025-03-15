@@ -11,7 +11,7 @@ esports_manager_contract = "2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/home/wanaqil/devnet-wallet.json"
 
 [scripts]

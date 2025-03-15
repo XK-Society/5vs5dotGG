@@ -1,7 +1,7 @@
 // src/components/match/match-simulator.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { TeamAccount, PlayerAccount } from '@/lib/types/program';
@@ -9,6 +9,8 @@ import { simulateMatch, SimulatedMatchResult } from '@/lib/simulation/engine';
 import MatchEvents from './match-events';
 import MatchResults from './match-results';
 import { useWallet } from '@/providers/WalletProvider';
+import { getMyTeams } from '@/lib/api/team-service';
+import { getMyPlayers } from '@/lib/api/player-service';
 
 // Mock data for demonstration
 const mockTeamA: TeamAccount = {
@@ -325,14 +327,54 @@ export default function MatchSimulator() {
   const [matchResult, setMatchResult] = useState<SimulatedMatchResult | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [activeTab, setActiveTab] = useState<'events' | 'results'>('events');
-  const { connected } = useWallet();
+  const [userTeams, setUserTeams] = useState<any[]>([]);
+  const [userPlayers, setUserPlayers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { connected, publicKey } = useWallet();
+
+  // Load user's teams and players when wallet connects
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (connected && publicKey) {
+        try {
+          setLoading(true);
+          
+          // In a real application, you would fetch real data from the blockchain
+          // For now, we'll use our mock functions
+          const teams = await getMyTeams();
+          const players = await getMyPlayers();
+          
+          setUserTeams(teams);
+          setUserPlayers(players);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadUserData();
+  }, [connected, publicKey]);
 
   const runSimulation = () => {
     setIsSimulating(true);
     
     // Simulate delay for realism
     setTimeout(() => {
+      // In a production app, you would use actual user teams and players
+      // For now, we'll use our mock data
       const result = simulateMatch(mockTeamA, mockTeamB, mockPlayersA, mockPlayersB);
+      
+      // Update player mints to match the actual mints that would be on-chain
+      result.playerPerformances.teamA.forEach((perf, i) => {
+        perf.playerMint = mockPlayersA[i].mint;
+      });
+      
+      result.playerPerformances.teamB.forEach((perf, i) => {
+        perf.playerMint = mockPlayersB[i].mint;
+      });
+      
       setMatchResult(result);
       setIsSimulating(false);
     }, 2000);
@@ -342,6 +384,17 @@ export default function MatchSimulator() {
     setMatchResult(null);
   };
 
+  // Show loading state when data is being fetched
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex justify-center items-center py-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <p className="ml-3">Loading team and player data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

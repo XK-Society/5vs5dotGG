@@ -10,7 +10,7 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 
-// Use require instead of import since this is a CSS file
+
 require('@solana/wallet-adapter-react-ui/styles.css');
 
 interface WalletContextProviderProps {

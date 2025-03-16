@@ -227,7 +227,7 @@ export function createUpdatePlayerPerformanceInstruction(
   const checkedConsistencyChange = Math.max(-128, Math.min(consistencyChange, 127));
   const checkedFormChange = Math.max(-128, Math.min(formChange, 127));
   
-  // Create a debug version of the instruction data to log
+  // Create the instruction data
   const data = Buffer.concat([
     Buffer.from(EsportsManagerInstruction.UpdatePlayerPerformance),
     serializeString(matchId),
@@ -244,6 +244,8 @@ export function createUpdatePlayerPerformanceInstruction(
   ]);
   
   console.log('Instruction data created, length:', data.length, 'bytes');
+  // Print the raw instruction data for debugging
+  console.log('Raw instruction data:', Array.from(data));
   
   return new TransactionInstruction({
     programId: new PublicKey(PROGRAM_ID),

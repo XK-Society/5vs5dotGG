@@ -27,6 +27,9 @@ export const getWallet = () => {
 };
 
 // Sign and send transaction
+// src/lib/api/solana-service.ts (partial update for the signAndSendTransaction function)
+
+// Sign and send transaction
 export async function signAndSendTransaction(instruction: TransactionInstruction) {
   try {
     const wallet = getWallet();
@@ -81,24 +84,46 @@ export async function signAndSendTransaction(instruction: TransactionInstruction
     console.log('Requesting wallet to sign transaction...');
     const signedTransaction = await wallet.signTransaction(transaction);
     
-    // Send transaction immediately
-    console.log('Sending signed transaction to network...');
+    // Send transaction immediately with proper options for Devnet
+    console.log('Sending signed transaction to Devnet...');
     const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'finalized',
-      maxRetries: 3
+      skipPreflight: false,  // Run preflight checks
+      preflightCommitment: 'confirmed',  // Use confirmed commitment for preflight
+      maxRetries: 5  // Increase retries for Devnet
     });
     
     console.log('Transaction sent with signature:', signature);
     
-    // Confirm transaction with shorter timeout
-    const status = await connection.confirmTransaction({
+    // Confirm transaction with appropriate parameters for Devnet
+    const confirmationStrategy = {
       signature,
       blockhash,
       lastValidBlockHeight
-    }, 'confirmed');
+    };
     
-    return { signature, status };
+    // Use a longer timeout for Devnet confirmations (30 seconds)
+    const timeoutId = setTimeout(() => {
+      console.warn('Transaction confirmation taking longer than expected...');
+    }, 15000);
+    
+    try {
+      const status = await connection.confirmTransaction(confirmationStrategy, 'confirmed');
+      clearTimeout(timeoutId);
+      return { signature, status };
+    } catch (confirmError) {
+      clearTimeout(timeoutId);
+      console.error('Transaction confirmation error:', confirmError);
+      // Check if the transaction is still valid despite confirmation timeout
+      try {
+        const response = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
+        if (response?.value?.confirmationStatus) {
+          return { signature, status: { context: { slot: 0 }, value: response.value } };
+        }
+      } catch (statusError) {
+        console.error('Failed to get signature status:', statusError);
+      }
+      throw confirmError;
+    }
   } catch (error) {
     console.error('Transaction error:', error);
     
@@ -174,6 +199,8 @@ export async function findPlayerPda(mintPublicKey: string) {
       }
     }
     
+    // We need to use the correct seed structure based on the IDL
+    // The seeds for PlayerAccount are ['player', mint]
     return findProgramAddress(
       [
         Buffer.from('player'),

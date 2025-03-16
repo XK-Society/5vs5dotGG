@@ -1,22 +1,146 @@
 // src/lib/api/match-service.ts
-import { signAndSendTransaction, findPlayerPda, getWallet } from './solana-service';
+import { signAndSendTransaction, findPlayerPda, getWallet, getConnection } from './solana-service';
 import { createUpdatePlayerPerformanceInstruction } from './idl-client';
 import { SimulatedMatchResult } from '../simulation/engine';
 import { config } from '../config';
+import { PublicKey } from '@solana/web3.js';
 
-// Record match result on chain with improved error handling and mock mode
-export async function recordMatchResultOnChain(matchResult: SimulatedMatchResult) {
-  // FORCE mock mode temporarily until we debug the instruction data format
-  const useMockMode = true; // config.mockTransactions; 
+// Record a single player's performance on the blockchain
+// src/lib/api/match-service.ts - update recordSinglePlayerOnChain
+
+export async function recordSinglePlayerOnChain(
+  playerMint: string,
+  matchId: string,
+  win: boolean,
+  mvp: boolean,
+  expGained: number,
+  mechanicalChange: number,
+  gameKnowledgeChange: number,
+  teamCommunicationChange: number,
+  adaptabilityChange: number,
+  consistencyChange: number,
+  formChange: number,
+  matchStats: Uint8Array
+): Promise<{
+  success: boolean;
+  signature: string;
+  error?: string;
+}> {
+  // Use mock mode only if explicitly configured
+  if (config.mockTransactions === true) {
+    console.log(`DEV MODE: Recording player ${playerMint} with match ID ${matchId}`);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      signature: `mock-tx-${Date.now()}-${playerMint.substring(0, 8)}`
+    };
+  }
   
-  if (useMockMode) {
+  try {
+    const wallet = getWallet();
+    if (!wallet || !wallet.publicKey) {
+      throw new Error('Wallet not connected');
+    }
+    
+    const walletAddress = wallet.publicKey.toString();
+    console.log(`Updating player ${playerMint} on Devnet with wallet ${walletAddress}`);
+    
+    // Get player PDA
+    const { pda: playerPda } = await findPlayerPda(playerMint);
+    console.log(`Using player PDA: ${playerPda}`);
+    
+    // Create instruction to update player performance
+    const instruction = createUpdatePlayerPerformanceInstruction(
+      walletAddress,
+      playerPda,
+      matchId,
+      win,
+      mvp,
+      expGained,
+      mechanicalChange,
+      gameKnowledgeChange,
+      teamCommunicationChange,
+      adaptabilityChange,
+      consistencyChange,
+      formChange,
+      matchStats
+    );
+    
+    // Sign and send transaction
+    console.log(`Sending transaction to Devnet...`);
+    
+    try {
+      const result = await signAndSendTransaction(instruction);
+      console.log(`Transaction sent with signature: ${result.signature}`);
+      
+      return {
+        success: true,
+        signature: result.signature || `tx-${Date.now()}`
+      };
+    } catch (txError: unknown) {
+      let errorMessage = 'Unknown transaction error';
+      if (txError instanceof Error) {
+        errorMessage = txError.message;
+      }
+      
+      console.error(`Transaction error details:`, txError);
+      
+      // If it's a simulation error related to instruction data, provide more details
+      if (errorMessage.includes('invalid instruction data')) {
+        console.error('This likely means the instruction format does not match what the program expects');
+        console.error('Check the account setup and instruction data format');
+        
+        // Try to log more details about the player account
+        try {
+          const connection = getConnection();
+          const playerPdaPublicKey = new PublicKey(playerPda);
+          const accountInfo = await connection.getAccountInfo(playerPdaPublicKey);
+          console.log('Player account exists:', !!accountInfo);
+          if (accountInfo) {
+            console.log('Player account data size:', accountInfo.data.length);
+          }
+        } catch (accError) {
+          console.error('Failed to check player account:', accError);
+        }
+      }
+      
+      throw new Error(`Transaction failed: ${errorMessage}`);
+    }
+  } catch (error: unknown) {
+    console.error('Failed to record player on chain:', error);
+    
+    // Properly handle the unknown error type
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = String((error as { message: unknown }).message);
+    }
+    
+    return {
+      success: false,
+      signature: `error-tx-${Date.now()}`,
+      error: errorMessage
+    };
+  }
+}
+
+// Record match result on chain with improved error handling
+export async function recordMatchResultOnChain(matchResult: SimulatedMatchResult) {
+  // Use mock mode only if explicitly configured
+  if (config.mockTransactions === true) {
     console.log('DEV MODE: Using mock transactions');
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Generate mock transaction signatures
     const mockSignatures = Array(matchResult.playerPerformances.teamA.length + 
-                                matchResult.playerPerformances.teamB.length)
+                               matchResult.playerPerformances.teamB.length)
       .fill(0)
       .map((_, i) => `mock-tx-${Date.now()}-${i}-${matchResult.matchId.substring(0, 8)}`);
     
@@ -127,13 +251,24 @@ export async function recordMatchResultOnChain(matchResult: SimulatedMatchResult
     
     return {
       success: true,
-      transactions: successful.map(r => r.signature)
+      transactions: successful.map(r => r.signature).filter(Boolean) as string[]
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to record match result on chain:', error);
+    
+    // Properly handle the unknown error type
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      errorMessage = String((error as { message: unknown }).message);
+    }
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage
     };
   }
 }

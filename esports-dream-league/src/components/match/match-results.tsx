@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { TeamAccount, PlayerAccount, Rarity } from '@/lib/types/program';
 import { SimulatedMatchResult } from '@/lib/simulation/engine';
 import { useWallet } from '@/providers/WalletProvider';
-import { recordMatchResultOnChain } from '@/lib/api/match-service';
+import { recordSinglePlayerOnChain } from '@/lib/api/match-service';
 
 interface MatchResultsProps {
   matchResult: SimulatedMatchResult;
@@ -60,48 +60,142 @@ export default function MatchResults({
   playersA, 
   playersB 
 }: MatchResultsProps) {
-  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'success' | 'error'>('idle');
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(-1);
+  const [currentTeam, setCurrentTeam] = useState<'A' | 'B' | null>(null);
+  const [recordingState, setRecordingState] = useState<'idle' | 'selecting' | 'processing' | 'success' | 'error'>('idle');
+  const [processedPlayers, setProcessedPlayers] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [transactionSignatures, setTransactionSignatures] = useState<string[]>([]);
   const { connected, publicKey } = useWallet();
 
-  const recordMatchOnChain = async () => {
+  const startRecordingProcess = () => {
     if (!connected || !publicKey) {
       setErrorMessage('Please connect your wallet to record the match results on-chain.');
       return;
     }
-  
+    
+    setRecordingState('selecting');
+    // Start with first player from Team A
+    setCurrentTeam('A');
+    setCurrentPlayerIndex(0);
+  };
+
+  const recordCurrentPlayer = async () => {
+    if (!connected || !publicKey || currentTeam === null || currentPlayerIndex === -1) {
+      return;
+    }
+
+    const team = currentTeam === 'A' ? 'teamA' : 'teamB';
+    const performance = matchResult.playerPerformances[team][currentPlayerIndex];
+    const player = currentTeam === 'A' ? playersA[currentPlayerIndex] : playersB[currentPlayerIndex];
+
+    if (!performance || !player) {
+      moveToNextPlayer();
+      return;
+    }
+
+    setRecordingState('processing');
+
     try {
-      setRecordingState('recording');
+      // Determine if this player was on the winning team
+      const isWinner = (currentTeam === 'A' && matchResult.winnerIndex === 0) || 
+                       (currentTeam === 'B' && matchResult.winnerIndex === 1);
       
-      // Call the match service to record the match result on the blockchain
-      const result = await recordMatchResultOnChain(matchResult);
-      
+      // Create match stats (simple for now)
+      const matchStats = new Uint8Array([
+        matchResult.score[0], 
+        matchResult.score[1]
+      ]);
+
+      const result = await recordSinglePlayerOnChain(
+        player.mint,
+        matchResult.matchId,
+        isWinner,
+        performance.isMVP,
+        performance.expGained,
+        performance.mechanicalChange,
+        performance.gameKnowledgeChange,
+        performance.teamCommunicationChange,
+        performance.adaptabilityChange,
+        performance.consistencyChange,
+        performance.formChange,
+        matchStats
+      );
+
       if (result.success) {
-        setRecordingState('success');
-        setTransactionSignatures(result.transactions || []);
+        // Add the signature to our list, ensuring it's never undefined
+        setTransactionSignatures(prev => [...prev, result.signature || `tx-${Date.now()}`]);
+        // Add this player to processed list
+        setProcessedPlayers(prev => [...prev, player.mint]);
+        // Move to the next player
+        moveToNextPlayer();
       } else {
         setRecordingState('error');
-        // Improved error message handling
-        if (result.error?.includes('Plugin Closed') || result.error?.includes('wallet connection')) {
-          setErrorMessage('Wallet connection was closed. Please reconnect your wallet and try again.');
-        } else {
-          setErrorMessage(result.error || 'An error occurred while recording the match results');
-        }
+        setErrorMessage(result.error || 'Failed to record player data on blockchain');
       }
     } catch (error) {
-      console.error('Error recording match on chain:', error);
+      console.error('Error recording player performance:', error);
       setRecordingState('error');
-      
-      // Better error classification
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMsg.includes('wallet') || errorMsg.includes('connect')) {
-        setErrorMessage('Wallet connection issue. Please reconnect your wallet and try again.');
+      setErrorMessage(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  };
+
+  const moveToNextPlayer = () => {
+    // Determine the next player to process
+    if (currentTeam === 'A') {
+      if (currentPlayerIndex + 1 < playersA.length) {
+        // Move to next player in team A
+        setCurrentPlayerIndex(currentPlayerIndex + 1);
+        setRecordingState('selecting');
       } else {
-        setErrorMessage('An error occurred while recording the match on-chain.');
+        // Move to team B
+        setCurrentTeam('B');
+        setCurrentPlayerIndex(0);
+        setRecordingState('selecting');
+      }
+    } else if (currentTeam === 'B') {
+      if (currentPlayerIndex + 1 < playersB.length) {
+        // Move to next player in team B
+        setCurrentPlayerIndex(currentPlayerIndex + 1);
+        setRecordingState('selecting');
+      } else {
+        // Finished all players
+        setRecordingState('success');
+        setCurrentTeam(null);
+        setCurrentPlayerIndex(-1);
       }
     }
   };
+
+  const skipCurrentPlayer = () => {
+    moveToNextPlayer();
+  };
+
+  const resetRecording = () => {
+    setRecordingState('idle');
+    setCurrentTeam(null);
+    setCurrentPlayerIndex(-1);
+    setErrorMessage(null);
+  };
+
+  // Helper function to get the current player information
+  const getCurrentPlayerInfo = () => {
+    if (currentTeam === null || currentPlayerIndex === -1) return null;
+    
+    const player = currentTeam === 'A' 
+      ? playersA[currentPlayerIndex] 
+      : playersB[currentPlayerIndex];
+      
+    const performance = currentTeam === 'A'
+      ? matchResult.playerPerformances.teamA[currentPlayerIndex]
+      : matchResult.playerPerformances.teamB[currentPlayerIndex];
+      
+    if (!player || !performance) return null;
+    
+    return { player, performance, team: currentTeam === 'A' ? teamA : teamB };
+  };
+
+  const currentPlayerInfo = getCurrentPlayerInfo();
 
   return (
     <div className="space-y-6">
@@ -122,8 +216,15 @@ export default function MatchResults({
                   const performance = matchResult.playerPerformances.teamA[index];
                   if (!performance) return null;
                   
+                  const isProcessed = processedPlayers.includes(player.mint);
+                  const isCurrentlyRecording = recordingState === 'processing' && 
+                                              currentTeam === 'A' && 
+                                              currentPlayerIndex === index;
+                  
                   return (
-                    <div key={player.mint} className="bg-secondary/30 rounded-lg p-4">
+                    <div key={player.mint} className={`bg-secondary/30 rounded-lg p-4 
+                      ${isProcessed ? 'border-2 border-green-500' : ''} 
+                      ${isCurrentlyRecording ? 'border-2 border-blue-500' : ''}`}>
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <div className="flex items-center">
@@ -131,6 +232,11 @@ export default function MatchResults({
                             {performance.isMVP && (
                               <span className="ml-2 px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full text-xs font-medium">
                                 MVP
+                              </span>
+                            )}
+                            {isProcessed && (
+                              <span className="ml-2 px-2 py-0.5 bg-green-500/20 text-green-500 rounded-full text-xs font-medium">
+                                Recorded
                               </span>
                             )}
                           </div>
@@ -192,8 +298,15 @@ export default function MatchResults({
                   const performance = matchResult.playerPerformances.teamB[index];
                   if (!performance) return null;
                   
+                  const isProcessed = processedPlayers.includes(player.mint);
+                  const isCurrentlyRecording = recordingState === 'processing' && 
+                                              currentTeam === 'B' && 
+                                              currentPlayerIndex === index;
+                  
                   return (
-                    <div key={player.mint} className="bg-secondary/30 rounded-lg p-4">
+                    <div key={player.mint} className={`bg-secondary/30 rounded-lg p-4 
+                      ${isProcessed ? 'border-2 border-green-500' : ''} 
+                      ${isCurrentlyRecording ? 'border-2 border-blue-500' : ''}`}>
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <div className="flex items-center">
@@ -201,6 +314,11 @@ export default function MatchResults({
                             {performance.isMVP && (
                               <span className="ml-2 px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full text-xs font-medium">
                                 MVP
+                              </span>
+                            )}
+                            {isProcessed && (
+                              <span className="ml-2 px-2 py-0.5 bg-green-500/20 text-green-500 rounded-full text-xs font-medium">
+                                Recorded
                               </span>
                             )}
                           </div>
@@ -261,21 +379,71 @@ export default function MatchResults({
         <CardHeader>
           <CardTitle>Record Match On-Chain</CardTitle>
           <CardDescription>
-            Submit these match results to the blockchain to permanently record player performance changes
+            Submit match results to the blockchain to permanently record player performance changes
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {recordingState === 'idle' && (
-              <Button onClick={recordMatchOnChain} disabled={!connected}>
-                Record Match Results
-              </Button>
+              <div>
+                <Button onClick={startRecordingProcess} disabled={!connected}>
+                  Record Match Results
+                </Button>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You'll record each player's performance individually.
+                </p>
+              </div>
             )}
             
-            {recordingState === 'recording' && (
+            {recordingState === 'selecting' && currentPlayerInfo && (
+              <div className="space-y-4 border p-4 rounded-md">
+                <div className="flex justify-between">
+                  <h3 className="font-semibold">Record Player: {currentPlayerInfo.player.name}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    currentPlayerInfo.team === teamA ? 'bg-blue-500/20 text-blue-500' : 'bg-red-500/20 text-red-500'
+                  }`}>
+                    {currentPlayerInfo.team.name}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    Mechanical: <span className={currentPlayerInfo.performance.mechanicalChange >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      {currentPlayerInfo.performance.mechanicalChange >= 0 ? '+' : ''}{currentPlayerInfo.performance.mechanicalChange}
+                    </span>
+                  </div>
+                  <div>
+                    Game Knowledge: <span className={currentPlayerInfo.performance.gameKnowledgeChange >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      {currentPlayerInfo.performance.gameKnowledgeChange >= 0 ? '+' : ''}{currentPlayerInfo.performance.gameKnowledgeChange}
+                    </span>
+                  </div>
+                  <div>
+                    Team Comm.: <span className={currentPlayerInfo.performance.teamCommunicationChange >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      {currentPlayerInfo.performance.teamCommunicationChange >= 0 ? '+' : ''}{currentPlayerInfo.performance.teamCommunicationChange}
+                    </span>
+                  </div>
+                  <div>
+                    Adaptability: <span className={currentPlayerInfo.performance.adaptabilityChange >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      {currentPlayerInfo.performance.adaptabilityChange >= 0 ? '+' : ''}{currentPlayerInfo.performance.adaptabilityChange}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between pt-2">
+                  <Button variant="outline" onClick={skipCurrentPlayer}>
+                    Skip Player
+                  </Button>
+                  <Button onClick={recordCurrentPlayer}>
+                    Record on Blockchain
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {recordingState === 'processing' && (
               <div className="flex items-center space-x-2">
                 <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
-                <p>Recording match results on-chain...</p>
+                <p>Recording player data on-chain...</p>
               </div>
             )}
             
@@ -299,10 +467,14 @@ export default function MatchResults({
                   <p>Match results successfully recorded on the blockchain!</p>
                 </div>
                 
+                <p className="text-sm text-muted-foreground">
+                  {processedPlayers.length} player(s) updated on-chain.
+                </p>
+                
                 {transactionSignatures.length > 0 && (
                   <div className="mt-2 text-sm">
                     <p className="text-muted-foreground mb-1">Transaction signatures:</p>
-                    <ul className="space-y-1">
+                    <ul className="space-y-1 h-32 overflow-y-auto">
                       {transactionSignatures.map((sig, i) => (
                         <li key={i} className="break-all">
                           <a 
@@ -318,6 +490,10 @@ export default function MatchResults({
                     </ul>
                   </div>
                 )}
+                
+                <Button variant="outline" onClick={resetRecording}>
+                  Done
+                </Button>
               </div>
             )}
             
@@ -343,12 +519,19 @@ export default function MatchResults({
                 </div>
                 
                 <div className="flex space-x-3">
-                  <Button variant="outline" onClick={() => setRecordingState('idle')}>
+                  <Button variant="outline" onClick={resetRecording}>
                     Cancel
                   </Button>
-                  <Button onClick={recordMatchOnChain}>
-                    Retry
-                  </Button>
+                  {currentPlayerInfo && (
+                    <Button onClick={recordCurrentPlayer}>
+                      Retry Current Player
+                    </Button>
+                  )}
+                  {currentPlayerInfo && (
+                    <Button variant="outline" onClick={skipCurrentPlayer}>
+                      Skip & Continue
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

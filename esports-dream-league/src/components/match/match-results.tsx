@@ -70,7 +70,7 @@ export default function MatchResults({
       setErrorMessage('Please connect your wallet to record the match results on-chain.');
       return;
     }
-
+  
     try {
       setRecordingState('recording');
       
@@ -82,12 +82,24 @@ export default function MatchResults({
         setTransactionSignatures(result.transactions || []);
       } else {
         setRecordingState('error');
-        setErrorMessage(result.error || 'An error occurred while recording the match results');
+        // Improved error message handling
+        if (result.error?.includes('Plugin Closed') || result.error?.includes('wallet connection')) {
+          setErrorMessage('Wallet connection was closed. Please reconnect your wallet and try again.');
+        } else {
+          setErrorMessage(result.error || 'An error occurred while recording the match results');
+        }
       }
     } catch (error) {
       console.error('Error recording match on chain:', error);
       setRecordingState('error');
-      setErrorMessage('An error occurred while recording the match on-chain.');
+      
+      // Better error classification
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMsg.includes('wallet') || errorMsg.includes('connect')) {
+        setErrorMessage('Wallet connection issue. Please reconnect your wallet and try again.');
+      } else {
+        setErrorMessage('An error occurred while recording the match on-chain.');
+      }
     }
   };
 
@@ -310,23 +322,34 @@ export default function MatchResults({
             )}
             
             {recordingState === 'error' && (
-              <div className="flex items-center space-x-2 text-red-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-                <p>{errorMessage || 'An error occurred while recording the match results.'}</p>
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-center space-x-2 text-red-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  <p>{errorMessage || 'An error occurred while recording the match results.'}</p>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <Button variant="outline" onClick={() => setRecordingState('idle')}>
+                    Cancel
+                  </Button>
+                  <Button onClick={recordMatchOnChain}>
+                    Retry
+                  </Button>
+                </div>
               </div>
             )}
             

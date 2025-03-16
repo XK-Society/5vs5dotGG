@@ -31,6 +31,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [walletName, setWalletName] = useState<string | null>(null);
+  const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
+  const MAX_AUTO_RECONNECT_ATTEMPTS = 3;
 
   // Get a reference to the wallet adapter (Backpack, Phantom, Solflare)
   const getWallet = () => {
@@ -43,6 +45,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       (window as any).solflare || 
       (window as any).solana // Generic adapter used by some wallets
     );
+  };
+
+  // Function to get wallet name
+  const getWalletName = (wallet: any): string => {
+    if ((window as any).backpack) {
+      return 'Backpack';
+    } else if ((window as any).phantom?.solana) {
+      return 'Phantom';
+    } else if ((window as any).solflare) {
+      return 'Solflare';
+    } else {
+      return 'Solana Wallet';
+    }
   };
 
   // Check if wallet is already connected on page load
@@ -59,17 +74,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             if (address) {
               setPublicKey(address);
               setConnected(true);
-              
-              // Try to get the wallet name
-              if ((window as any).backpack) {
-                setWalletName('Backpack');
-              } else if ((window as any).phantom?.solana) {
-                setWalletName('Phantom');
-              } else if ((window as any).solflare) {
-                setWalletName('Solflare');
-              } else {
-                setWalletName('Solana Wallet');
-              }
+              setWalletName(getWalletName(wallet));
             }
           } 
           // For wallets with connected property
@@ -78,17 +83,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             if (address) {
               setPublicKey(address);
               setConnected(true);
-              
-              // Try to get wallet name
-              if ((window as any).backpack) {
-                setWalletName('Backpack');
-              } else if ((window as any).phantom?.solana) {
-                setWalletName('Phantom');
-              } else if ((window as any).solflare) {
-                setWalletName('Solflare');
-              } else {
-                setWalletName('Solana Wallet');
-              }
+              setWalletName(getWalletName(wallet));
             }
           }
         }
@@ -101,6 +96,58 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
     checkWalletConnection();
   }, []);
+
+  // Add auto-reconnect feature
+  useEffect(() => {
+    let reconnectInterval: NodeJS.Timeout | null = null;
+    
+    const checkAndReconnect = async () => {
+      const wallet = getWallet();
+      
+      if (wallet && !wallet.connected && !connecting && connected) {
+        // Only attempt reconnect if we haven't exceeded maximum attempts
+        if (connectionAttempts < MAX_AUTO_RECONNECT_ATTEMPTS) {
+          setConnectionAttempts(prev => prev + 1);
+          try {
+            console.log('Attempting to reconnect wallet...');
+            setConnecting(true);
+            if (wallet.connect) {
+              await wallet.connect();
+            }
+            const address = wallet.publicKey?.toString();
+            if (address) {
+              setPublicKey(address);
+              setConnected(true);
+              setWalletName(getWalletName(wallet));
+              // Reset connection attempts counter on success
+              setConnectionAttempts(0);
+            }
+          } catch (error) {
+            console.error('Auto-reconnect failed:', error);
+          } finally {
+            setConnecting(false);
+          }
+        } else {
+          console.log('Maximum reconnection attempts reached, disconnecting');
+          // Force disconnect if we've reached maximum attempts
+          setConnected(false);
+          setPublicKey(null);
+          setConnectionAttempts(0);
+        }
+      }
+    };
+    
+    if (connected) {
+      // If wallet connection drops, try to reconnect every 10 seconds
+      reconnectInterval = setInterval(checkAndReconnect, 10000);
+    }
+    
+    return () => {
+      if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+      }
+    };
+  }, [connected, connecting, connectionAttempts]);
 
   const connectWallet = async () => {
     try {
@@ -126,17 +173,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       if (address) {
         setPublicKey(address);
         setConnected(true);
-        
-        // Set wallet name
-        if ((window as any).backpack) {
-          setWalletName('Backpack');
-        } else if ((window as any).phantom?.solana) {
-          setWalletName('Phantom');
-        } else if ((window as any).solflare) {
-          setWalletName('Solflare');
-        } else {
-          setWalletName('Solana Wallet');
-        }
+        setWalletName(getWalletName(wallet));
+        // Reset connection attempts on manual connection
+        setConnectionAttempts(0);
       }
     } catch (error) {
       console.error('Error connecting wallet:', error);
@@ -155,6 +194,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setPublicKey(null);
       setConnected(false);
       setWalletName(null);
+      setConnectionAttempts(0);
     } catch (error) {
       console.error('Error disconnecting wallet:', error);
     }

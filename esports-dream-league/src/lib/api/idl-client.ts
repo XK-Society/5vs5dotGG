@@ -211,21 +211,40 @@ export function createUpdatePlayerPerformanceInstruction(
   formChange: number,
   matchStats: Uint8Array
 ): TransactionInstruction {
+  console.log('Creating instruction with params:', {
+    owner, playerPda, matchId, win, mvp, expGained,
+    mechanicalChange, gameKnowledgeChange, teamCommunicationChange,
+    adaptabilityChange, consistencyChange, formChange,
+    matchStats: Array.from(matchStats)
+  });
+  
+  // Make sure all number params are within valid ranges for their types
+  const checkedExpGained = Math.max(0, Math.min(expGained, 4294967295)); // u32 max
+  const checkedMechanicalChange = Math.max(-128, Math.min(mechanicalChange, 127)); // i8 range
+  const checkedGameKnowledgeChange = Math.max(-128, Math.min(gameKnowledgeChange, 127));
+  const checkedTeamCommunicationChange = Math.max(-128, Math.min(teamCommunicationChange, 127));
+  const checkedAdaptabilityChange = Math.max(-128, Math.min(adaptabilityChange, 127));
+  const checkedConsistencyChange = Math.max(-128, Math.min(consistencyChange, 127));
+  const checkedFormChange = Math.max(-128, Math.min(formChange, 127));
+  
+  // Create a debug version of the instruction data to log
   const data = Buffer.concat([
     Buffer.from(EsportsManagerInstruction.UpdatePlayerPerformance),
     serializeString(matchId),
     serializeBoolean(win),
     serializeBoolean(mvp),
-    serializeU32(expGained),
-    serializeI8(mechanicalChange),
-    serializeI8(gameKnowledgeChange),
-    serializeI8(teamCommunicationChange),
-    serializeI8(adaptabilityChange),
-    serializeI8(consistencyChange),
-    serializeI8(formChange),
+    serializeU32(checkedExpGained),
+    serializeI8(checkedMechanicalChange),
+    serializeI8(checkedGameKnowledgeChange),
+    serializeI8(checkedTeamCommunicationChange),
+    serializeI8(checkedAdaptabilityChange),
+    serializeI8(checkedConsistencyChange),
+    serializeI8(checkedFormChange),
     serializeBytes(matchStats)
   ]);
-
+  
+  console.log('Instruction data created, length:', data.length, 'bytes');
+  
   return new TransactionInstruction({
     programId: new PublicKey(PROGRAM_ID),
     data,

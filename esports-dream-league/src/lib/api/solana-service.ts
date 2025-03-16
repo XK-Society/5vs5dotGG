@@ -35,6 +35,19 @@ export async function signAndSendTransaction(instruction: TransactionInstruction
       throw new Error('Wallet not connected');
     }
     
+    // Add wallet state check and reconnection attempt
+    if (wallet.disconnected || (wallet.connected === false)) {
+      console.log('Wallet disconnected, attempting to reconnect...');
+      try {
+        if (wallet.connect) {
+          await wallet.connect();
+        }
+      } catch (connErr) {
+        console.error('Failed to reconnect wallet:', connErr);
+        throw new Error('Wallet disconnected. Please reconnect manually.');
+      }
+    }
+    
     const connection = getConnection();
     
     // Create a transaction
@@ -42,7 +55,7 @@ export async function signAndSendTransaction(instruction: TransactionInstruction
     
     // Add compute budget instruction (manually created for compatibility)
     const computeBudgetProgramId = new PublicKey('ComputeBudget111111111111111111111111111111');
-    const unitLimitData = Buffer.from([0, ...new Uint8Array(new Uint32Array([200000]).buffer)]);
+    const unitLimitData = Buffer.from([0, ...new Uint8Array(new Uint32Array([300000]).buffer)]);
     const computeBudgetInstruction = new TransactionInstruction({
       keys: [],
       programId: computeBudgetProgramId,
@@ -54,23 +67,59 @@ export async function signAndSendTransaction(instruction: TransactionInstruction
     // Add the main instruction
     transaction.add(instruction);
     
-    // Get recent blockhash
-    const { blockhash } = await connection.getLatestBlockhash('confirmed');
+    // Get FRESH recent blockhash
+    console.log('Getting fresh blockhash...');
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash({
+      commitment: 'finalized'
+    });
+    console.log('Using blockhash:', blockhash, 'valid until height:', lastValidBlockHeight);
+    
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = wallet.publicKey;
     
     // Sign transaction
+    console.log('Requesting wallet to sign transaction...');
     const signedTransaction = await wallet.signTransaction(transaction);
     
-    // Send transaction
-    const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+    // Send transaction immediately
+    console.log('Sending signed transaction to network...');
+    const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'finalized',
+      maxRetries: 3
+    });
     
-    // Confirm transaction
-    const status = await connection.confirmTransaction(signature, 'confirmed');
+    console.log('Transaction sent with signature:', signature);
+    
+    // Confirm transaction with shorter timeout
+    const status = await connection.confirmTransaction({
+      signature,
+      blockhash,
+      lastValidBlockHeight
+    }, 'confirmed');
     
     return { signature, status };
   } catch (error) {
     console.error('Transaction error:', error);
+    
+    // Improve error classification
+    if (
+      typeof error === 'object' && 
+      error !== null && 
+      'message' in error && 
+      typeof (error as any).message === 'string'
+    ) {
+      const errorMsg = (error as any).message;
+      if (errorMsg.includes('Plugin Closed') || errorMsg.includes('wallet disconnected')) {
+        throw new Error('Wallet connection lost. Please reconnect your wallet and try again.');
+      } else if (errorMsg.includes('Blockhash not found')) {
+        throw new Error('Transaction timed out. Please try again.');
+      } else if (errorMsg.includes('invalid instruction data')) {
+        console.error('Invalid instruction data error. Program may not understand the transaction format.');
+        throw new Error('Invalid transaction format. This may indicate a program version mismatch.');
+      }
+    }
+    
     throw error;
   }
 }
@@ -101,25 +150,28 @@ export async function findTeamPda(owner: string, teamName: string) {
   );
 }
 
-// src/lib/api/solana-service.ts - update findPlayerPda
+// Updated findPlayerPda function with improved mock data handling
 export async function findPlayerPda(mintPublicKey: string) {
   try {
-    // Make sure mintPublicKey is a valid base58 public key
+    // Check if we're using mock data
+    const isMockData = !mintPublicKey.includes('/') && 
+                       (mintPublicKey.startsWith('player') || mintPublicKey.length < 32);
+    
     let mintPubkey;
     
-    try {
-      mintPubkey = new PublicKey(mintPublicKey);
-    } catch (error) {
-      console.error('Invalid mint address:', mintPublicKey);
-      
-      // For development/testing, create a deterministic key based on the string
-      const hash = await crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(mintPublicKey)
-      );
-      
-      // Convert to a valid Solana public key (32 bytes)
+    if (isMockData) {
+      // Generate consistent PDAs for mock data
+      const mockSeed = new TextEncoder().encode(`mock-${mintPublicKey}`);
+      const hash = await crypto.subtle.digest('SHA-256', mockSeed);
       mintPubkey = new PublicKey(new Uint8Array(hash).slice(0, 32));
+      console.log(`Using mock key for ${mintPublicKey}: ${mintPubkey.toString()}`);
+    } else {
+      try {
+        mintPubkey = new PublicKey(mintPublicKey);
+      } catch (error) {
+        console.error('Invalid mint address format:', mintPublicKey);
+        throw error;
+      }
     }
     
     return findProgramAddress(

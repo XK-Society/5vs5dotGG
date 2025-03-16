@@ -12,6 +12,18 @@ import { useWallet } from '@/providers/WalletProvider';
 import { getMyTeams } from '@/lib/api/team-service';
 import { getMyPlayers } from '@/lib/api/player-service';
 
+export type SimulatedPlayerPerformance = {
+  playerMint: string;
+  mechanicalChange: number;
+  gameKnowledgeChange: number;
+  teamCommunicationChange: number;
+  adaptabilityChange: number;
+  consistencyChange: number;
+  formChange: number;
+  expGained: number;
+  isMVP: boolean;
+  matchStats?: Uint8Array;
+};
 // Mock data for demonstration
 const mockTeamA: TeamAccount = {
   owner: "TeamAOwner123456789",
@@ -357,29 +369,49 @@ export default function MatchSimulator() {
     loadUserData();
   }, [connected, publicKey]);
 
-  const runSimulation = () => {
-    setIsSimulating(true);
-    
-    // Simulate delay for realism
-    setTimeout(() => {
-      // In a production app, you would use actual user teams and players
-      // For now, we'll use our mock data
-      const result = simulateMatch(mockTeamA, mockTeamB, mockPlayersA, mockPlayersB);
-      
-      // Update player mints to match the actual mints that would be on-chain
-      result.playerPerformances.teamA.forEach((perf, i) => {
-        perf.playerMint = mockPlayersA[i].mint;
-      });
-      
-      result.playerPerformances.teamB.forEach((perf, i) => {
-        perf.playerMint = mockPlayersB[i].mint;
-      });
-      
-      setMatchResult(result);
-      setIsSimulating(false);
-    }, 2000);
-  };
+  // In simulateMatch function or where you create the match result and process it
+// In match-simulator.tsx where you run the simulation
+// In match-simulator.tsx where you run the simulation
 
+
+// In match-simulator.tsx, update the runSimulation function
+// In match-simulator.tsx where you create the match result
+const runSimulation = () => {
+  setIsSimulating(true);
+  
+  setTimeout(() => {
+    // Create the simulation result
+    const result = simulateMatch(mockTeamA, mockTeamB, mockPlayersA, mockPlayersB);
+    
+    // Update player mints
+    result.playerPerformances.teamA.forEach((perf, i) => {
+      perf.playerMint = mockPlayersA[i].mint;
+    });
+    
+    result.playerPerformances.teamB.forEach((perf, i) => {
+      perf.playerMint = mockPlayersB[i].mint;
+    });
+    
+    // Create simple match stats - just a binary representation of the score
+    // [teamAScore, teamBScore]
+    const matchStats = new Uint8Array([
+      result.score[0], 
+      result.score[1]
+    ]);
+    
+    console.log(`Match score: ${result.score[0]}-${result.score[1]}`);
+    console.log(`Match stats bytes: [${matchStats[0]}, ${matchStats[1]}]`);
+    
+    // Add matchStats to all player performances
+    [...result.playerPerformances.teamA, ...result.playerPerformances.teamB]
+      .forEach(perf => {
+        perf.matchStats = matchStats.slice(); // Create a copy
+      });
+    
+    setMatchResult(result);
+    setIsSimulating(false);
+  }, 2000);
+};
   const resetSimulation = () => {
     setMatchResult(null);
   };

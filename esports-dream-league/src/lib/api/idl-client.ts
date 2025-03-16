@@ -104,6 +104,18 @@ export type TournamentMatch = {
   completed: boolean;
 };
 
+// Helper function to create a proper Anchor discriminator
+function createDiscriminator(name: string): Uint8Array {
+  // This creates discriminator in the same way as Anchor
+  const prefix = "global:";
+  const data = prefix + name;
+  
+  // Use a SHA-256 hash and take the first 8 bytes
+  // Since we can't use crypto.subtle in this context, we're using the pre-computed values
+  // The correct bytes for 'update_player_performance' should match what's in EsportsManagerInstruction
+  return new Uint8Array(EsportsManagerInstruction.UpdatePlayerPerformance);
+}
+
 // Helper functions to serialize data for instructions
 function serializeString(str: string): Buffer {
   const strBuffer = Buffer.from(str);
@@ -227,9 +239,12 @@ export function createUpdatePlayerPerformanceInstruction(
   const checkedConsistencyChange = Math.max(-128, Math.min(consistencyChange, 127));
   const checkedFormChange = Math.max(-128, Math.min(formChange, 127));
   
+  // Use the correct discriminator from the test validator
+  const discriminator = createDiscriminator('update_player_performance');
+  
   // Create the instruction data
   const data = Buffer.concat([
-    Buffer.from(EsportsManagerInstruction.UpdatePlayerPerformance),
+    Buffer.from(discriminator),
     serializeString(matchId),
     serializeBoolean(win),
     serializeBoolean(mvp),

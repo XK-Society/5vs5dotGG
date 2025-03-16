@@ -185,3 +185,15 @@ type Type = {
     variants?: { name: string }[];
   };
 };
+type SimulatedPlayerPerformance = {
+  playerMint: string;
+  mechanicalChange: number;
+  gameKnowledgeChange: number;
+  teamCommunicationChange: number;
+  adaptabilityChange: number;
+  consistencyChange: number;
+  formChange: number;
+  expGained: number;
+  isMVP: boolean;
+  matchStats?: Uint8Array; // Add this field
+};

@@ -27,9 +27,6 @@ export const getWallet = () => {
 };
 
 // Sign and send transaction
-// src/lib/api/solana-service.ts (partial update for the signAndSendTransaction function)
-
-// Sign and send transaction
 export async function signAndSendTransaction(instruction: TransactionInstruction) {
   try {
     const wallet = getWallet();
@@ -80,9 +77,29 @@ export async function signAndSendTransaction(instruction: TransactionInstruction
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = wallet.publicKey;
     
+    // Log transaction details before signing
+    console.log('Transaction details before signing:', {
+      instructions: transaction.instructions.map(inst => ({
+        programId: inst.programId.toString(),
+        keys: inst.keys.map(k => ({
+          pubkey: k.pubkey.toString(),
+          isSigner: k.isSigner,
+          isWritable: k.isWritable
+        })),
+        dataLength: inst.data.length
+      })),
+      feePayer: transaction.feePayer?.toString(),
+      recentBlockhash: transaction.recentBlockhash
+    });
+    
     // Sign transaction
     console.log('Requesting wallet to sign transaction...');
     const signedTransaction = await wallet.signTransaction(transaction);
+    
+    // Verify the transaction has been properly signed
+    if (!signedTransaction || !signedTransaction.signatures || signedTransaction.signatures.length === 0) {
+      throw new Error('Transaction was not signed properly');
+    }
     
     // Send transaction immediately with proper options for Devnet
     console.log('Sending signed transaction to Devnet...');

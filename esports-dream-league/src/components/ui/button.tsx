@@ -38,11 +38,20 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     return (
-      <button
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
+      <Button 
+  onClick={async () => {
+    const result = await testMemoTransaction();
+    if (result.success) {
+      console.log('Test transaction succeeded:', result.signature);
+    } else {
+      console.error('Test transaction failed:', result.error);
+    }
+  }} 
+  variant="outline" 
+  className="ml-2"
+>
+  Test Simple Transaction
+</Button>
     )
   }
 )

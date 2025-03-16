@@ -3,11 +3,9 @@ import { signAndSendTransaction, findPlayerPda, getWallet, getConnection } from 
 import { createUpdatePlayerPerformanceInstruction } from './idl-client';
 import { SimulatedMatchResult } from '../simulation/engine';
 import { config } from '../config';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 
 // Record a single player's performance on the blockchain
-// src/lib/api/match-service.ts - update recordSinglePlayerOnChain
-
 export async function recordSinglePlayerOnChain(
   playerMint: string,
   matchId: string,
@@ -52,6 +50,23 @@ export async function recordSinglePlayerOnChain(
     const { pda: playerPda } = await findPlayerPda(playerMint);
     console.log(`Using player PDA: ${playerPda}`);
     
+    // Log all parameters we're sending to the instruction
+    console.log('UpdatePlayerPerformance parameters:', {
+      owner: walletAddress,
+      playerPda,
+      matchId,
+      win,
+      mvp,
+      expGained,
+      mechanicalChange,
+      gameKnowledgeChange,
+      teamCommunicationChange,
+      adaptabilityChange,
+      consistencyChange, 
+      formChange,
+      matchStats: Array.from(matchStats)
+    });
+    
     // Create instruction to update player performance
     const instruction = createUpdatePlayerPerformanceInstruction(
       walletAddress,
@@ -68,6 +83,18 @@ export async function recordSinglePlayerOnChain(
       formChange,
       matchStats
     );
+    
+    // Log instruction details for debugging
+    console.log('Instruction details:', {
+      programId: instruction.programId.toString(),
+      keys: instruction.keys.map(k => ({
+        pubkey: k.pubkey.toString(),
+        isSigner: k.isSigner,
+        isWritable: k.isWritable
+      })),
+      dataHex: Buffer.from(instruction.data).toString('hex'),
+      dataLength: instruction.data.length
+    });
     
     // Sign and send transaction
     console.log(`Sending transaction to Devnet...`);
@@ -268,6 +295,53 @@ export async function recordMatchResultOnChain(matchResult: SimulatedMatchResult
     
     return {
       success: false,
+      error: errorMessage
+    };
+  }
+}
+
+// Test a simple memo transaction to verify basic Solana connectivity
+export async function testMemoTransaction(): Promise<{
+  success: boolean;
+  signature: string;
+  error?: string;
+}> {
+  try {
+    const wallet = getWallet();
+    if (!wallet || !wallet.publicKey) {
+      throw new Error('Wallet not connected');
+    }
+    
+    const walletAddress = wallet.publicKey.toString();
+    console.log(`Testing simple memo transaction with wallet ${walletAddress}`);
+    
+    // Create a simple memo instruction
+    const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+    const memoInstruction = new TransactionInstruction({
+      keys: [],
+      programId: MEMO_PROGRAM_ID,
+      data: Buffer.from('Test memo from Esports Dream League', 'utf-8')
+    });
+    
+    // Sign and send transaction
+    console.log(`Sending test memo transaction...`);
+    const result = await signAndSendTransaction(memoInstruction);
+    console.log(`Test memo transaction sent with signature: ${result.signature}`);
+    
+    return {
+      success: true,
+      signature: result.signature || `tx-${Date.now()}`
+    };
+  } catch (error: unknown) {
+    console.error('Failed to send test memo transaction:', error);
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      signature: `error-tx-${Date.now()}`,
       error: errorMessage
     };
   }

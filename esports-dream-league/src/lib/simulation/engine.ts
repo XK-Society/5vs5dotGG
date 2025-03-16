@@ -30,8 +30,8 @@ type SimulatedPlayerPerformance = {
   formChange: number;
   expGained: number;
   isMVP: boolean;
+  matchStats?: Uint8Array; // Add this field
 };
-
 export type SimulatedMatchResult = {
   matchId: string;
   timestamp: number;

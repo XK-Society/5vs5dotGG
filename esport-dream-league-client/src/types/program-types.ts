@@ -1,5 +1,6 @@
 import { PublicKey } from '@solana/web3.js';
 
+// ✅ Enum for Training Type
 export enum TrainingType {
   Mechanical = 0,
   GameKnowledge = 1,
@@ -8,6 +9,7 @@ export enum TrainingType {
   Consistency = 4,
 }
 
+// ✅ Enum for Rarity
 export enum Rarity {
   Common = 0,
   Uncommon = 1,
@@ -16,6 +18,7 @@ export enum Rarity {
   Legendary = 4,
 }
 
+// ✅ Enum for Tournament Status
 export enum TournamentStatus {
   Registration = 0,
   InProgress = 1,
@@ -23,11 +26,13 @@ export enum TournamentStatus {
   Canceled = 3,
 }
 
+// ✅ Special Ability type
 export type SpecialAbility = {
   name: string;
   value: number;
 };
 
+// ✅ Player Stats type
 export type PlayerStats = {
   mechanical: number;
   gameKnowledge: number;
@@ -38,12 +43,14 @@ export type PlayerStats = {
   form: number;
 };
 
+// ✅ Roster Position
 export type RosterPosition = {
   playerMint: PublicKey;
   position: string;
   addedAt: number;
 };
 
+// ✅ Team Statistics
 export type TeamStatistics = {
   matchesPlayed: number;
   wins: number;
@@ -55,6 +62,7 @@ export type TeamStatistics = {
   synergyScore: number;
 };
 
+// ✅ Match Performance
 export type MatchPerformance = {
   matchId: string;
   timestamp: number;
@@ -64,6 +72,7 @@ export type MatchPerformance = {
   stats: Uint8Array;
 };
 
+// ✅ Team Match Result
 export type TeamMatchResult = {
   matchId: string;
   timestamp: number;
@@ -73,6 +82,7 @@ export type TeamMatchResult = {
   tournamentId: PublicKey | null;
 };
 
+// ✅ Tournament Match
 export type TournamentMatch = {
   matchId: string;
   timestamp: number;
@@ -82,4 +92,49 @@ export type TournamentMatch = {
   score: [number, number];
   round: number;
   completed: boolean;
+};
+
+/// -----------------------------------
+/// ✅ Fixed Part: Adding Anchor Account Interfaces
+/// -----------------------------------
+
+export type PlayerAccount = {
+  publicKey?: PublicKey; // PDA of the player
+  owner: PublicKey; // Owner wallet
+  mint: PublicKey; // Player NFT mint
+  name: string;
+  position?: string; // Role (Midlaner, Support, Jungler, etc.)
+  createdAt: number;
+  lastUpdated: number;
+  team?: PublicKey; // Team PDA
+  uri: string;
+  mechanical: number;
+  gameKnowledge: number;
+  teamCommunication: number;
+  adaptability: number;
+  consistency: number;
+  specialAbilities: SpecialAbility[];
+  gameSpecificData: Uint8Array;
+  experience: number;
+  matchesPlayed: number;
+  wins: number;
+  mvpCount: number;
+  form: number;
+  potential: number;
+  rarity: Rarity;
+  creator?: PublicKey;
+  isExclusive: boolean;
+};
+
+export type TeamAccount = {
+  publicKey?: PublicKey; // PDA of the team
+  owner: PublicKey; // Team owner wallet
+  name: string;
+  collectionMint?: PublicKey; // NFT collection mint (optional)
+  logoUri: string;
+  createdAt: number;
+  lastUpdated: number;
+  roster: RosterPosition[]; // Players in the team
+  statistics: TeamStatistics;
+  matchHistory?: TeamMatchResult[];
 };

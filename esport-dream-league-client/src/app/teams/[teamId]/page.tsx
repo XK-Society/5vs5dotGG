@@ -1,5 +1,6 @@
 'use client';
 
+import React, { use } from 'react';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
@@ -11,23 +12,135 @@ import { Rarity } from '@/types/program-types';
 import Link from 'next/link';
 import Image from 'next/image';
 
+// Define proper interfaces for your account data types
+interface SpecialAbility {
+  name: string;
+  value: number;
+}
+
+interface RosterPosition {
+  playerMint: PublicKey;
+  position: string;
+  addedAt: number;
+}
+
+interface TeamStatistics {
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  tournamentWins: number;
+  avgMechanical: number;
+  avgGameKnowledge: number;
+  avgTeamCommunication: number;
+  synergyScore: number;
+}
+
+interface TeamMatchResult {
+  matchId: string;
+  timestamp: number;
+  opponent: PublicKey;
+  win: boolean;
+  score: [number, number];
+  tournamentId?: PublicKey;
+}
+
+interface TeamAccount {
+  publicKey?: PublicKey;
+  owner: PublicKey;
+  name: string;
+  collectionMint?: PublicKey;
+  logoUri: string;
+  createdAt: number;
+  lastUpdated: number;
+  roster: RosterPosition[];
+  statistics: TeamStatistics;
+  matchHistory?: TeamMatchResult[];
+}
+
+interface PlayerAccount {
+  publicKey?: PublicKey;
+  owner: PublicKey;
+  mint: PublicKey;
+  name: string;
+  position?: string;
+  createdAt: number;
+  lastUpdated: number;
+  team?: PublicKey;
+  uri: string;
+  mechanical: number;
+  gameKnowledge: number;
+  teamCommunication: number;
+  adaptability: number;
+  consistency: number;
+  specialAbilities: SpecialAbility[];
+  gameSpecificData: Uint8Array;
+  experience: number;
+  matchesPlayed: number;
+  wins: number;
+  mvpCount: number;
+  form: number;
+  potential: number;
+  rarity: number;
+  creator?: PublicKey;
+  isExclusive: boolean;
+}
+
 interface TeamDetailPageProps {
-  params: {
-    teamId: string;
-  };
+  params: Promise<{ teamId: string }>;
+}
+
+// Safe Image component for handling image loading errors
+function SafeImage({ src, alt, className = '', fill = false }: { 
+  src?: string, 
+  alt: string, 
+  className?: string,
+  fill?: boolean 
+}) {
+  const [error, setError] = useState(false);
+  const initial = (alt || '?').charAt(0).toUpperCase();
+
+  // If source is invalid or error occurred, show fallback
+  if (!src || !src.startsWith('http') || error) {
+    return (
+      <div className={`flex items-center justify-center h-full w-full bg-blue-100 text-blue-600 text-xl font-bold ${className}`}>
+        {initial}
+      </div>
+    );
+  }
+
+  // Otherwise try to load the image
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      className={className}
+      fill={fill}
+      onError={() => setError(true)}
+    />
+  );
 }
 
 export default function TeamDetailPage({ params }: TeamDetailPageProps) {
-  const { teamId } = params;
+  // Use React.use() to unwrap the params promise
+  const { teamId } = use(params);
+  
   const { publicKey } = useWallet();
   const { fetchTeamAccount, addPlayerToTeam, removePlayerFromTeam } = useTeamOperations();
   const { fetchPlayerAccount } = usePlayerOperations();
   
-  const [team, setTeam] = useState<any>(null);
-  const [players, setPlayers] = useState<any[]>([]);
+  const [team, setTeam] = useState<TeamAccount | null>(null);
+  const [players, setPlayers] = useState<PlayerAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+
+  // Helper function to find player PDAs
+  const findPlayerPDA = (mintPublicKey: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from('player'), mintPublicKey.toBuffer()],
+      new PublicKey('2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ') // Your program ID
+    );
+  };
 
   useEffect(() => {
     const loadTeam = async () => {
@@ -36,7 +149,8 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
         if (!teamId) return;
         
         const teamPDA = new PublicKey(teamId);
-        const teamAccount = await fetchTeamAccount(teamPDA);
+        // Use proper type assertion with the defined interface
+        const teamAccount = await fetchTeamAccount(teamPDA) as unknown as TeamAccount;
         
         if (teamAccount) {
           setTeam({ 
@@ -50,10 +164,11 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
           // Fetch detailed player info for each player in the roster
           if (teamAccount.roster && teamAccount.roster.length > 0) {
             const playerDetails = await Promise.all(
-              teamAccount.roster.map(async (position: any) => {
+              teamAccount.roster.map(async (position: RosterPosition) => {
                 try {
                   const [playerPDA] = findPlayerPDA(position.playerMint);
-                  const playerAccount = await fetchPlayerAccount(playerPDA);
+                  // Use proper type assertion for player account
+                  const playerAccount = await fetchPlayerAccount(playerPDA) as unknown as PlayerAccount;
                   return {
                     ...playerAccount,
                     publicKey: playerPDA,
@@ -66,7 +181,7 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
               })
             );
             
-            setPlayers(playerDetails.filter(Boolean));
+            setPlayers(playerDetails.filter(Boolean) as PlayerAccount[]);
           }
         }
       } catch (error) {
@@ -76,21 +191,13 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
       }
     };
     
-    // Helper function to find player PDAs
-    const findPlayerPDA = (mintPublicKey: PublicKey) => {
-      return PublicKey.findProgramAddressSync(
-        [Buffer.from('player'), mintPublicKey.toBuffer()],
-        new PublicKey('2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ') // Your program ID
-      );
-    };
-    
     loadTeam();
-  }, [teamId, publicKey]);
+  }, [teamId, publicKey, fetchTeamAccount, fetchPlayerAccount]);
 
   const handlePlayerSelected = async (playerMint: PublicKey, position: string) => {
     if (!team) return;
     
-    const success = await addPlayerToTeam(team.publicKey, playerMint, position);
+    const success = await addPlayerToTeam(team.publicKey!, playerMint, position);
     if (success) {
       // Reload the team data
       window.location.reload();
@@ -103,7 +210,7 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
     const confirmed = window.confirm('Are you sure you want to remove this player from the team?');
     if (!confirmed) return;
     
-    const success = await removePlayerFromTeam(team.publicKey, playerMint);
+    const success = await removePlayerFromTeam(team.publicKey!, playerMint);
     if (success) {
       // Reload the team data
       window.location.reload();
@@ -176,19 +283,12 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center mb-6">
                 <div className="h-20 w-20 relative rounded-full overflow-hidden mr-4 bg-gray-200">
-                  {team.logoUri && (
-                    <Image 
-                      src={team.logoUri} 
-                      alt={`${team.name} logo`} 
-                      fill 
-                      className="object-cover"
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder-team-logo.jpg';
-                      }}
-                    />
-                  )}
+                  <SafeImage 
+                    src={team.logoUri} 
+                    alt={team.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{team.name}</h2>
@@ -254,7 +354,7 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {team.roster.map((position: any, index: number) => {
+                  {team.roster.map((position: RosterPosition, index: number) => {
                     const player = players.find(p => p.mint.equals(position.playerMint));
                     
                     return (
@@ -356,7 +456,7 @@ export default function TeamDetailPage({ params }: TeamDetailPageProps) {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {team.matchHistory.map((match: any, index: number) => (
+                    {team.matchHistory.map((match: TeamMatchResult, index: number) => (
                       <tr key={index}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {new Date(match.timestamp * 1000).toLocaleDateString()}

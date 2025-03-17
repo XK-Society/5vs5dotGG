@@ -292,6 +292,7 @@ export default function TournamentsPage() {
               </div>
             </div>
             
+            
             <div className="py-4">
               <div className="text-xs uppercase text-gray-500 mb-2">Tournament Actions</div>
               <ul className="space-y-2">
@@ -422,6 +423,17 @@ export default function TournamentsPage() {
               {activeTab === 'completed' && 'Completed Tournaments'}
               {activeTab === 'registered' && 'My Tournaments'}
             </h1>
+
+            <Link 
+                href="/demo-simulation" 
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Tournament Demo
+              </Link>
             
             {publicKey && !isCreatingTournament && (
               <button

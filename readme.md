@@ -18,6 +18,12 @@ A blockchain-based esports management simulation where players collect athlete N
 ## Game contract link
 https://explorer.sonic.game/address/2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ?cluster=testnet.v1
 
+## Demo video
+https://youtu.be/otMkjbLi7Aw
+
+## Slide 
+https://www.canva.com/design/DAGiBzjJDpI/1Hn36ZAis65zI9gTsxAQsA/edit?utm_content=DAGiBzjJDpI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+
 ## Architecture
 
 The project uses a hybrid architecture that combines Solana blockchain for NFTs and game state with an off-chain AI engine for match simulations.

@@ -90,7 +90,7 @@ export default function CreatePlayer() {
         mintKeypair.publicKey,
         playerName,
         position,
-        uri || 'https://arweave.net/placeholder-uri'
+        uri || '/images/placeholder-player.png' // <-- Updated placeholder path
       );
       
       if (playerPDA) {

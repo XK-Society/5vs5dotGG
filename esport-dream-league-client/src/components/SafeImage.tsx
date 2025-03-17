@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface SafeImageProps {
@@ -13,7 +13,7 @@ interface SafeImageProps {
 }
 
 // Use a local placeholder image in the public folder
-const DEFAULT_TEAM_LOGO = '/placeholder-team-logo.png';
+const DEFAULT_TEAM_LOGO = '/images/placeholder-team-logo.png';
 
 export const SafeImage = ({ 
   src, 
@@ -23,9 +23,23 @@ export const SafeImage = ({
   width,
   height 
 }: SafeImageProps) => {
-  const [imageSrc, setImageSrc] = useState<string>(
-    src && src.startsWith('http') ? src : DEFAULT_TEAM_LOGO
-  );
+  // Initialize with default local image
+  const [imageSrc, setImageSrc] = useState<string>(DEFAULT_TEAM_LOGO);
+  
+  // Check if src is valid and update after mount
+  useEffect(() => {
+    // Only update if src is provided and looks valid
+    if (src) {
+      // For external URLs, ensure they are from allowed domains or use default
+      if (src.startsWith('http')) {
+        // You could check if domain is allowed, but safer to just use local default
+        setImageSrc(DEFAULT_TEAM_LOGO);
+      } else {
+        // For local paths, use directly
+        setImageSrc(src);
+      }
+    }
+  }, [src]);
 
   const handleError = () => {
     setImageSrc(DEFAULT_TEAM_LOGO);

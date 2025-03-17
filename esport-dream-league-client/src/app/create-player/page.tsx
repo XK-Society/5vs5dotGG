@@ -2,15 +2,28 @@
 
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Keypair, PublicKey } from '@solana/web3.js';
+import { 
+  Keypair, 
+  PublicKey, 
+  Transaction, 
+  SystemProgram,
+  LAMPORTS_PER_SOL 
+} from '@solana/web3.js';
+import { 
+  TOKEN_PROGRAM_ID, 
+  MintLayout,
+  createInitializeMintInstruction 
+} from '@solana/spl-token';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { usePlayerOperations } from '@/hooks/usePlayerOperations';
+import { useConnection } from '@solana/wallet-adapter-react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
 
 export default function CreatePlayer() {
-  const { publicKey } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const { initializePlayer, isLoading } = usePlayerOperations();
   
   const [playerName, setPlayerName] = useState('');
@@ -35,8 +48,44 @@ export default function CreatePlayer() {
     }
     
     try {
-      // In a real app, you would create the NFT first and then initialize the player
-      // For this example, we're just generating a keypair to simulate the mint
+      // First, create the mint account
+      console.log("Creating mint account...");
+      const mintTransaction = new Transaction().add(
+        // Create mint account instruction
+        SystemProgram.createAccount({
+          fromPubkey: publicKey,
+          newAccountPubkey: mintKeypair.publicKey,
+          space: MintLayout.span,
+          lamports: await connection.getMinimumBalanceForRentExemption(MintLayout.span),
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        // Initialize mint instruction
+        createInitializeMintInstruction(
+          mintKeypair.publicKey,
+          0, // Decimals for NFT is 0
+          publicKey, // Mint authority
+          publicKey, // Freeze authority
+          TOKEN_PROGRAM_ID
+        )
+      );
+      
+      // Sign and send the transaction
+      mintTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      mintTransaction.feePayer = publicKey;
+      
+      // Need to sign with both wallet and the mint keypair
+      mintTransaction.partialSign(mintKeypair);
+      
+      const mintSignature = await sendTransaction(mintTransaction, connection, {
+        signers: [mintKeypair]
+      });
+      
+      console.log("Mint transaction sent:", mintSignature);
+      await connection.confirmTransaction(mintSignature, 'confirmed');
+      
+      console.log("Mint created successfully!");
+      
+      // Now initialize the player
       const playerPDA = await initializePlayer(
         mintKeypair.publicKey,
         playerName,
@@ -102,7 +151,7 @@ export default function CreatePlayer() {
                     <h2 className="text-xl font-semibold mb-4">Generate Player NFT</h2>
                     <p className="mb-6 text-gray-600">
                       First, we'll generate a new keypair that will represent your player's NFT mint.
-                      In a full implementation, this would mint an actual NFT token.
+                      We'll create the mint account on the blockchain.
                     </p>
                     <button
                       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg"

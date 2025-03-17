@@ -9,9 +9,9 @@ import { toast } from 'react-toastify';
 export function useTeamOperations() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { program } = useProgram();
+  const {   program } = useProgram();
   const [isLoading, setIsLoading] = useState(false);
-
+  const [isClient, setIsClient] = useState(false);
   const createTeam = async (name: string, logoUri: string) => {
     if (!program || !publicKey) return;
     
@@ -119,7 +119,7 @@ export function useTeamOperations() {
     if (!program) return null;
     
     try {
-      return await program.account.TeamAccount.fetch(teamPDA);
+      return await program.account.teamAccount.fetch(teamPDA);
     } catch (error) {
       console.error('Error fetching team account:', error);
       return null;
@@ -127,11 +127,22 @@ export function useTeamOperations() {
   };
 
   const fetchUserTeams = async () => {
-    if (!program || !publicKey) return [];
+    if (!program || !publicKey) {
+      console.log("No program or publicKey available");
+      return [];
+    }
     
     try {
+      // Check if the program account exists
+      if (!program.account || !program.account.teamAccount) {
+        console.warn("Team account is not properly initialized in the program");
+        return [];
+      }
+      
+      console.log("Fetching teams for wallet:", publicKey.toString());
+      
       // This will fetch all team accounts filtered by owner
-      const teams = await program.account.TeamAccount.all([
+      const teams = await program.account.teamAccount.all([
         {
           memcmp: {
             offset: 8, // Skip discriminator
@@ -140,6 +151,7 @@ export function useTeamOperations() {
         },
       ]);
       
+      console.log("Fetched teams:", teams.length, teams);
       return teams;
     } catch (error) {
       console.error('Error fetching user teams:', error);
@@ -151,7 +163,7 @@ export function useTeamOperations() {
     if (!program) return [];
     
     try {
-      return await program.account.TeamAccount.all();
+      return await program.account.teamAccount.all();
     } catch (error) {
       console.error('Error fetching all teams:', error);
       return [];

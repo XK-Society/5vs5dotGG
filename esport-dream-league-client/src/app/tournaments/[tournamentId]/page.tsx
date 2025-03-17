@@ -7,6 +7,8 @@ import { useTournamentOperations } from '@/hooks/useTournamentOperations';
 import { useTeamOperations } from '@/hooks/useTeamOperations';
 import { PublicKey } from '@solana/web3.js';
 import Link from 'next/link';
+import { TeamAccount, TournamentAccount } from '@/types/account-types';
+import React from 'react'; 
 
 interface TournamentDetailPageProps {
   params: {
@@ -15,12 +17,13 @@ interface TournamentDetailPageProps {
 }
 
 export default function TournamentDetailPage({ params }: TournamentDetailPageProps) {
+  
   const { tournamentId } = params;
   const { publicKey } = useWallet();
   const { fetchTournamentAccount, getStatusString } = useTournamentOperations();
   const { fetchTeamAccount } = useTeamOperations();
   
-  const [tournament, setTournament] = useState<any>(null);
+  const [tournament, setTournament] = useState<TournamentAccount | null>(null);
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,21 +37,23 @@ export default function TournamentDetailPage({ params }: TournamentDetailPagePro
         const tournamentAccount = await fetchTournamentAccount(tournamentPDA);
         
         if (tournamentAccount) {
-          setTournament({ 
+          const typedTournament: TournamentAccount = {
             ...tournamentAccount,
             publicKey: tournamentPDA 
-          });
+          };
+          
+          setTournament(typedTournament);
           
           // If there are registered teams, fetch their details
-          if (tournamentAccount.registeredTeams && tournamentAccount.registeredTeams.length > 0) {
+          if (typedTournament.registeredTeams && typedTournament.registeredTeams.length > 0) {
             const teamDetails = await Promise.all(
-              tournamentAccount.registeredTeams.map(async (teamId: PublicKey) => {
+              typedTournament.registeredTeams.map(async (teamId: PublicKey) => {
                 try {
                   const teamAccount = await fetchTeamAccount(teamId);
                   return {
                     ...teamAccount,
                     publicKey: teamId,
-                  };
+                  } as TeamAccount;
                 } catch (error) {
                   console.error('Error fetching team:', error);
                   return null;
@@ -56,7 +61,7 @@ export default function TournamentDetailPage({ params }: TournamentDetailPagePro
               })
             );
             
-            setTeams(teamDetails.filter(Boolean));
+            setTeams(teamDetails.filter(Boolean) as TeamAccount[]);
           }
         }
       } catch (error) {
@@ -67,7 +72,7 @@ export default function TournamentDetailPage({ params }: TournamentDetailPagePro
     };
     
     loadTournament();
-  }, [tournamentId]);
+  }, [tournamentId, fetchTournamentAccount, fetchTeamAccount]);
 
   if (loading) {
     return (

@@ -1,3 +1,4 @@
+// src/hooks/useTournamentOperations.ts
 'use client';
 
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import { useProgram, findTournamentPDA } from '@/contexts/ProgramContextProvider
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { toast } from 'react-toastify';
 import * as anchor from '@project-serum/anchor';
+import { TeamAccount, TournamentAccount } from '@/types/account-types';
 
 export function useTournamentOperations() {
   const { connection } = useConnection();
@@ -132,28 +134,59 @@ export function useTournamentOperations() {
     }
   };
 
-  const fetchTournamentAccount = async (tournamentPDA: PublicKey) => {
-    if (!program) return null;
-    
-    try {
-      return await program.account.TournamentAccount.fetch(tournamentPDA);
-    } catch (error) {
-      console.error('Error fetching tournament account:', error);
+// Fix the fetchTournamentAccount function
+const fetchTournamentAccount = async (tournamentPDA: PublicKey): Promise<TournamentAccount | null> => {
+  if (!program) return null;
+  
+  try {
+    if (!program.account || !program.account.tournamentAccount) {
+      console.warn("Tournament account is not properly initialized in the program");
       return null;
     }
-  };
-
-  const fetchAllTournaments = async () => {
-    if (!program) return [];
     
-    try {
-      return await program.account.TournamentAccount.all();
-    } catch (error) {
-      console.error('Error fetching all tournaments:', error);
+    const account = await program.account.tournamentAccount.fetch(tournamentPDA);
+    return account as unknown as TournamentAccount;
+  } catch (error) {
+    console.error('Error fetching tournament account:', error);
+    return null;
+  }
+};
+
+const fetchTeamAccount = async (teamPDA: PublicKey): Promise<TeamAccount | null> => {
+  if (!program) return null;
+  
+  try {
+    if (!program.account || !program.account.teamAccount) {
+      console.warn("Team account is not properly initialized in the program");
+      return null;
+    }
+    
+    const account = await program.account.teamAccount.fetch(teamPDA);
+    return account as unknown as TeamAccount;
+  } catch (error) {
+    console.error('Error fetching team account:', error);
+    return null;
+  }
+};
+
+// Fix the fetchAllTournaments function
+// In useTournamentOperations.ts
+const fetchAllTournaments = async () => {
+  if (!program) return [];
+  
+  try {
+    if (!program.account || !program.account.tournamentAccount) {
+      console.warn("Tournament account is not properly initialized in the program");
       return [];
     }
-  };
-
+    
+    const tournaments = await program.account.tournamentAccount.all();
+    return tournaments || [];
+  } catch (error) {
+    console.error('Error fetching all tournaments:', error);
+    return [];
+  }
+};
   // Add this function to fix the missing getStatusString error
   const getStatusString = (statusEnum: any) => {
     if (!statusEnum) return 'Registration';
@@ -169,6 +202,7 @@ export function useTournamentOperations() {
   };
 
   return {
+    fetchTeamAccount,
     createTournament,
     registerTeamForTournament,
     recordMatchResult,

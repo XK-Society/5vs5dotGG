@@ -4,7 +4,7 @@ import { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
-import { EsportsManager, IDL } from '../types/esports-manager';
+import { IDL } from '../types/esports-manager';
 
 // Program ID from your deployed contract
 export const PROGRAM_ID = new PublicKey("2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ");
@@ -40,7 +40,7 @@ export const findTournamentPDA = (authorityPublicKey: PublicKey, tournamentName:
 
 // Create Program Context
 type ProgramContextType = {
-  program: Program<EsportsManager> | null;
+  program: Program<any> | null;
   provider: AnchorProvider | null;
   isConnected: boolean;
 };
@@ -70,26 +70,43 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
         isConnected: false,
       };
     }
-
-    // Create the provider
-    const provider = new AnchorProvider(
-      connection,
-      wallet,
-      { preflightCommitment: 'processed' }
-    );
-
-    // Create the program
-    const program = new Program<EsportsManager>(
-      IDL,
-      PROGRAM_ID,
-      provider
-    );
-
-    return {
-      program,
-      provider,
-      isConnected: true,
-    };
+  
+    try {
+      // Create the provider
+      const provider = new AnchorProvider(
+        connection,
+        wallet,
+        { preflightCommitment: 'processed' }
+      );
+  
+      // Create the program
+      const program = new Program(
+        IDL,
+        PROGRAM_ID,
+        provider
+      );
+  
+      // Add debug logging
+      console.log("Program initialized:", !!program);
+      console.log("Program accounts:", !!program.account);
+      if (program.account) {
+        console.log("Available accounts:", Object.keys(program.account));
+        console.log("TournamentAccount:", !!program.account.tournamentAccount);
+      }
+  
+      return {
+        program,
+        provider,
+        isConnected: true,
+      };
+    } catch (error) {
+      console.error("Error creating Anchor program:", error);
+      return {
+        program: null,
+        provider: null,
+        isConnected: false,
+      };
+    }
   }, [connection, wallet]);
 
   return (

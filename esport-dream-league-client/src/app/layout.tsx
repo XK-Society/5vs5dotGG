@@ -1,8 +1,8 @@
+// src/app/layout.tsx
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { WalletContextProvider } from '@/contexts/WalletContextProvider';
-import { ProgramProvider } from '@/contexts/ProgramContextProvider';
+import { SolanaProvider } from '@/components/solana/solana-provider';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -13,31 +13,30 @@ export const metadata: Metadata = {
   description: 'Blockchain-based esports management simulation',
 };
 
+// src/app/layout.tsx
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <WalletContextProvider>
-          <ProgramProvider>
-            {children}
-            <ToastContainer
-              position="bottom-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </ProgramProvider>
-        </WalletContextProvider>
+        <SolanaProvider>
+          {children}
+          <ToastContainer
+            position="bottom-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </SolanaProvider>
       </body>
     </html>
   );

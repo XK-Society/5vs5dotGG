@@ -1,9 +1,10 @@
+// src/app/page.tsx
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useState, useEffect } from 'react';
 import { useTeamOperations } from '@/hooks/useTeamOperations';
 import { useTournamentOperations } from '@/hooks/useTournamentOperations';
 
@@ -22,10 +23,10 @@ export default function Home() {
         setIsLoading(true);
         try {
           const teams = await fetchUserTeams();
-          setUserTeamsCount(teams.length);
+          setUserTeamsCount(teams?.length || 0); // Use optional chaining and fallback to 0
 
           const tournaments = await fetchAllTournaments();
-          setActiveTournamentsCount(tournaments.length);
+          setActiveTournamentsCount(tournaments?.length || 0); // Use optional chaining and fallback to 0
         } catch (error) {
           console.error('Error loading data:', error);
         } finally {
@@ -37,7 +38,7 @@ export default function Home() {
     };
 
     loadData();
-  }, [publicKey]);
+  }, [publicKey, fetchUserTeams, fetchAllTournaments]);
 
   return (
     <main className="min-h-screen bg-gray-100">

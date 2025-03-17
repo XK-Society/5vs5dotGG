@@ -7,7 +7,7 @@ import { AccountFlags, EsportsManagerInstruction } from './idl-client';
 export const PROGRAM_ID = '2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ';
 
 // RPC endpoint for Solana devnet
-export const DEVNET_ENDPOINT = 'https://api.devnet.solana.com';
+export const DEVNET_ENDPOINT = 'https://rpc.ankr.com/solana_devnet/859e3dfc5fea2edd45e9dd3fd2748eee4daa40a8a5281a967b0d3d08e87afafe;
 
 // Create RPC client
 export const getRpc = () => createSolanaRpc(DEVNET_ENDPOINT);

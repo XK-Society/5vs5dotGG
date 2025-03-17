@@ -5,6 +5,7 @@ import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { IDL } from '../types/esports-manager';
+import { solanaConnection } from '@/services/connection-service';
 
 // Program ID from your deployed contract
 export const PROGRAM_ID = new PublicKey("2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ");
@@ -43,12 +44,14 @@ type ProgramContextType = {
   program: Program<any> | null;
   provider: AnchorProvider | null;
   isConnected: boolean;
+  clearCache: () => void;
 };
 
 const ProgramContext = createContext<ProgramContextType>({
   program: null,
   provider: null,
   isConnected: false,
+  clearCache: () => {},
 });
 
 export const useProgram = () => useContext(ProgramContext);
@@ -59,8 +62,11 @@ interface ProgramProviderProps {
 }
 
 export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
-  const { connection } = useConnection();
+  const { connection } = useConnection(); // Keep this for compatibility
   const wallet = useAnchorWallet();
+  
+  // Use the enhanced connection service instead of the default connection
+  const enhancedConnection = solanaConnection.getConnection();
 
   const { program, provider, isConnected } = useMemo(() => {
     if (!wallet) {
@@ -72,9 +78,9 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
     }
   
     try {
-      // Create the provider
+      // Create the provider with enhanced connection
       const provider = new AnchorProvider(
-        connection,
+        enhancedConnection,
         wallet,
         { preflightCommitment: 'processed' }
       );
@@ -85,14 +91,6 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
         PROGRAM_ID,
         provider
       );
-  
-      // Add debug logging
-      console.log("Program initialized:", !!program);
-      console.log("Program accounts:", !!program.account);
-      if (program.account) {
-        console.log("Available accounts:", Object.keys(program.account));
-        console.log("TournamentAccount:", !!program.account.tournamentAccount);
-      }
   
       return {
         program,
@@ -107,10 +105,15 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
         isConnected: false,
       };
     }
-  }, [connection, wallet]);
+  }, [enhancedConnection, wallet]);
+  
+  // Function to clear the connection service cache
+  const clearCache = () => {
+    solanaConnection.clearCache();
+  };
 
   return (
-    <ProgramContext.Provider value={{ program, provider, isConnected }}>
+    <ProgramContext.Provider value={{ program, provider, isConnected, clearCache }}>
       {children}
     </ProgramContext.Provider>
   );

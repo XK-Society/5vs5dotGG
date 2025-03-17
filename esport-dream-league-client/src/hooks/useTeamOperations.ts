@@ -6,20 +6,23 @@ import { useProgram, findTeamPDA, findPlayerPDA } from '@/contexts/ProgramContex
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { toast } from 'react-toastify';
 
+// Helper to add delay between requests
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function useTeamOperations() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const {   program } = useProgram();
+  const { program } = useProgram();
   const [isLoading, setIsLoading] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+
   const createTeam = async (name: string, logoUri: string) => {
     if (!program || !publicKey) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const [teamPDA] = findTeamPDA(publicKey, name);
-      
+
       const tx = await program.methods
         .createTeam(name, logoUri)
         .accounts({
@@ -29,10 +32,10 @@ export function useTeamOperations() {
           rent: SYSVAR_RENT_PUBKEY,
         })
         .transaction();
-      
+
       const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction(signature, 'confirmed');
-      
+
       toast.success('Team created successfully!');
       return teamPDA;
     } catch (error) {
@@ -50,12 +53,12 @@ export function useTeamOperations() {
     position: string
   ) => {
     if (!program || !publicKey) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const [playerPDA] = findPlayerPDA(playerMintPublicKey);
-      
+
       const tx = await program.methods
         .addPlayerToTeam(playerMintPublicKey, position)
         .accounts({
@@ -65,10 +68,10 @@ export function useTeamOperations() {
           playerMint: playerMintPublicKey,
         })
         .transaction();
-      
+
       const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction(signature, 'confirmed');
-      
+
       toast.success('Player added to team!');
       return true;
     } catch (error) {
@@ -85,12 +88,12 @@ export function useTeamOperations() {
     playerMintPublicKey: PublicKey
   ) => {
     if (!program || !publicKey) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const [playerPDA] = findPlayerPDA(playerMintPublicKey);
-      
+
       const tx = await program.methods
         .removePlayerFromTeam(playerMintPublicKey)
         .accounts({
@@ -100,10 +103,10 @@ export function useTeamOperations() {
           playerMint: playerMintPublicKey,
         })
         .transaction();
-      
+
       const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction(signature, 'confirmed');
-      
+
       toast.success('Player removed from team!');
       return true;
     } catch (error) {
@@ -115,44 +118,55 @@ export function useTeamOperations() {
     }
   };
 
-  const fetchTeamAccount = async (teamPDA: PublicKey) => {
+  // Improved Team Account Fetching with Exponential Backoff
+  const fetchTeamAccount = async (teamPDA: PublicKey, retries = 3, initialDelay = 300) => {
     if (!program) return null;
-    
-    try {
-      return await program.account.teamAccount.fetch(teamPDA);
-    } catch (error) {
-      console.error('Error fetching team account:', error);
-      return null;
+
+    let currentRetry = 0;
+    let delay = initialDelay;
+
+    while (currentRetry <= retries) {
+      try {
+        return await program.account.teamAccount.fetch(teamPDA);
+      } catch (error: any) {
+        const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
+        if (currentRetry >= retries || !isRateLimitError) {
+          console.error('Error fetching team account:', error);
+          return null;
+        }
+        console.log(`Rate limit hit, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
+        await sleep(delay);
+        delay *= 2;
+        currentRetry++;
+      }
     }
+
+    return null;
   };
 
+  // ✅ Improved fetchUserTeams function to prevent infinite re-fetching
   const fetchUserTeams = async () => {
-    if (!program || !publicKey) {
-      console.log("No program or publicKey available");
-      return [];
-    }
-    
+    if (!program || !publicKey) return [];
+
     try {
-      // Check if the program account exists
-      if (!program.account || !program.account.teamAccount) {
-        console.warn("Team account is not properly initialized in the program");
-        return [];
-      }
-      
       console.log("Fetching teams for wallet:", publicKey.toString());
-      
-      // This will fetch all team accounts filtered by owner
+
       const teams = await program.account.teamAccount.all([
         {
           memcmp: {
-            offset: 8, // Skip discriminator
+            offset: 8, // Skip Anchor discriminator
             bytes: publicKey.toBase58(),
           },
         },
       ]);
-      
-      console.log("Fetched teams:", teams.length, teams);
-      return teams;
+
+      console.log("Fetched teams:", teams.length);
+
+      // ✅ Ensure each team has a publicKey field
+      return teams.map((team) => ({
+        ...team,
+        publicKey: team.publicKey, // Add the publicKey manually
+      }));
     } catch (error) {
       console.error('Error fetching user teams:', error);
       return [];
@@ -161,11 +175,17 @@ export function useTeamOperations() {
 
   const fetchAllTeams = async () => {
     if (!program) return [];
-    
+
     try {
       return await program.account.teamAccount.all();
-    } catch (error) {
-      console.error('Error fetching all teams:', error);
+    } catch (error: any) {
+      const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
+
+      if (isRateLimitError) {
+        toast.error('Rate limit exceeded. Please try again later.');
+      } else {
+        console.error('Error fetching all teams:', error);
+      }
       return [];
     }
   };

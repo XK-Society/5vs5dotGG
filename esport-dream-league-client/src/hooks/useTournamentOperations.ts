@@ -9,6 +9,9 @@ import { toast } from 'react-toastify';
 import * as anchor from '@project-serum/anchor';
 import { TeamAccount, TournamentAccount } from '@/types/account-types';
 
+// Helper to add delay between requests
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export function useTournamentOperations() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
@@ -134,59 +137,129 @@ export function useTournamentOperations() {
     }
   };
 
-// Fix the fetchTournamentAccount function
-const fetchTournamentAccount = async (tournamentPDA: PublicKey): Promise<TournamentAccount | null> => {
-  if (!program) return null;
-  
-  try {
-    if (!program.account || !program.account.tournamentAccount) {
-      console.warn("Tournament account is not properly initialized in the program");
-      return null;
+  // Improved tournament account fetching with exponential backoff retry
+  const fetchTournamentAccount = async (tournamentPDA: PublicKey, retries = 3, initialDelay = 300): Promise<TournamentAccount | null> => {
+    if (!program) return null;
+    
+    let currentRetry = 0;
+    let delay = initialDelay;
+    
+    while (currentRetry <= retries) {
+      try {
+        if (!program.account || !program.account.tournamentAccount) {
+          console.warn("Tournament account is not properly initialized in the program");
+          return null;
+        }
+        
+        const account = await program.account.tournamentAccount.fetch(tournamentPDA);
+        return account as unknown as TournamentAccount;
+      } catch (error: any) {
+        // Check if the error is a 429 rate limit error
+        const isRateLimitError = error?.message?.includes('429') || 
+                                error?.toString()?.includes('429') ||
+                                error?.toString()?.includes('Too many requests');
+                                
+        // If we've used all retries or it's not a rate limit error, throw
+        if (currentRetry >= retries || !isRateLimitError) {
+          console.error('Error fetching tournament account:', error);
+          return null;
+        }
+        
+        // Wait before retrying with exponential backoff
+        console.log(`Rate limit hit, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
+        await sleep(delay);
+        
+        // Increase delay for next retry (exponential backoff)
+        delay *= 2;
+        currentRetry++;
+      }
     }
     
-    const account = await program.account.tournamentAccount.fetch(tournamentPDA);
-    return account as unknown as TournamentAccount;
-  } catch (error) {
-    console.error('Error fetching tournament account:', error);
     return null;
-  }
-};
+  };
 
-const fetchTeamAccount = async (teamPDA: PublicKey): Promise<TeamAccount | null> => {
-  if (!program) return null;
-  
-  try {
-    if (!program.account || !program.account.teamAccount) {
-      console.warn("Team account is not properly initialized in the program");
-      return null;
+  // Improved team account fetching with retry logic
+  const fetchTeamAccount = async (teamPDA: PublicKey, retries = 3, initialDelay = 300): Promise<TeamAccount | null> => {
+    if (!program) return null;
+    
+    let currentRetry = 0;
+    let delay = initialDelay;
+    
+    while (currentRetry <= retries) {
+      try {
+        if (!program.account || !program.account.teamAccount) {
+          console.warn("Team account is not properly initialized in the program");
+          return null;
+        }
+        
+        const account = await program.account.teamAccount.fetch(teamPDA);
+        return account as unknown as TeamAccount;
+      } catch (error: any) {
+        // Check if the error is a 429 rate limit error
+        const isRateLimitError = error?.message?.includes('429') || 
+                                error?.toString()?.includes('429') ||
+                                error?.toString()?.includes('Too many requests');
+                                
+        // If we've used all retries or it's not a rate limit error, throw
+        if (currentRetry >= retries || !isRateLimitError) {
+          console.error('Error fetching team account:', error);
+          return null;
+        }
+        
+        // Wait before retrying with exponential backoff
+        console.log(`Rate limit hit, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
+        await sleep(delay);
+        
+        // Increase delay for next retry (exponential backoff)
+        delay *= 2;
+        currentRetry++;
+      }
     }
     
-    const account = await program.account.teamAccount.fetch(teamPDA);
-    return account as unknown as TeamAccount;
-  } catch (error) {
-    console.error('Error fetching team account:', error);
     return null;
-  }
-};
+  };
 
-// Fix the fetchAllTournaments function
-// In useTournamentOperations.ts
-const fetchAllTournaments = async () => {
-  if (!program) return [];
-  
-  try {
-    if (!program.account || !program.account.tournamentAccount) {
-      console.warn("Tournament account is not properly initialized in the program");
-      return [];
+  // Improved fetchAllTournaments with caching and retry logic
+  const fetchAllTournaments = async (retries = 3, initialDelay = 500) => {
+    if (!program) return [];
+    
+    let currentRetry = 0;
+    let delay = initialDelay;
+    
+    while (currentRetry <= retries) {
+      try {
+        if (!program.account || !program.account.tournamentAccount) {
+          console.warn("Tournament account is not properly initialized in the program");
+          return [];
+        }
+        
+        const tournaments = await program.account.tournamentAccount.all();
+        return tournaments || [];
+      } catch (error: any) {
+        // Check if the error is a 429 rate limit error
+        const isRateLimitError = error?.message?.includes('429') || 
+                                error?.toString()?.includes('429') ||
+                                error?.toString()?.includes('Too many requests');
+                                
+        // If we've used all retries or it's not a rate limit error, throw
+        if (currentRetry >= retries || !isRateLimitError) {
+          console.error('Error fetching all tournaments:', error);
+          return [];
+        }
+        
+        // Wait before retrying with exponential backoff
+        console.log(`Rate limit hit when fetching tournaments, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
+        await sleep(delay);
+        
+        // Increase delay for next retry (exponential backoff)
+        delay *= 2;
+        currentRetry++;
+      }
     }
     
-    const tournaments = await program.account.tournamentAccount.all();
-    return tournaments || [];
-  } catch (error) {
-    console.error('Error fetching all tournaments:', error);
     return [];
-  }
-};
+  };
+
   // Add this function to fix the missing getStatusString error
   const getStatusString = (statusEnum: any) => {
     if (!statusEnum) return 'Registration';

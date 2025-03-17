@@ -13,13 +13,14 @@ export const WalletButton = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
+const DEFAULT_ENDPOINT = 'https://api.testnet.sonic.game/';
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
   // Use connection from your service instead of creating a new one
   const connection = useMemo(() => solanaConnection.getConnection(), []);
   
   // Get the endpoint from the connection for ConnectionProvider
-  const endpoint = connection.rpcEndpoint;
+  const endpoint = connection.rpcEndpoint || DEFAULT_ENDPOINT;
   
   const wallets = useMemo(
     () => [

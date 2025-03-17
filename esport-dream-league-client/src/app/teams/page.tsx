@@ -136,8 +136,8 @@ export default function TeamsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
-                <div className="text-xl font-bold text-yellow-500 mr-2">ESPORT</div>
-                <div className="text-xl font-bold text-blue-400">DREAM LEAGUE</div>
+                <div className="text-xl font-bold text-yellow-500 mr-2">5VS5</div>
+                <div className="text-xl font-bold text-blue-400">dotGG</div>
               </Link>
             </div>
             <nav className="hidden md:flex space-x-6">

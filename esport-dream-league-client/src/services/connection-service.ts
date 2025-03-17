@@ -103,6 +103,7 @@ export class SolanaConnectionService {
   private cache = new RpcCache();
   private queue = new RequestQueue();
   private endpoints = [
+    'https://api.testnet.sonic.game/',
     'https://rpc.ankr.com/solana_devnet/859e3dfc5fea2edd45e9dd3fd2748eee4daa40a8a5281a967b0d3d08e87afafe',
     'https://devnet.genesysgo.net',
     'https://devnet.solana.com'

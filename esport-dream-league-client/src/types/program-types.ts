@@ -138,3 +138,33 @@ export interface TeamAccount {
   statistics: TeamStatistics;
   matchHistory?: TeamMatchResult[];
 }
+
+// Added TournamentAccount based on the IDL
+export interface TournamentAccount {
+  publicKey?: PublicKey; // PDA of the tournament
+  authority: PublicKey; // Tournament creator/authority
+  name: string;
+  entryFee: number; // u64 in the IDL, but we'll use number for simplicity
+  prizePool: number; // u64 in the IDL, but we'll use number for simplicity
+  startTime: number; // i64 in the IDL (unix timestamp)
+  endTime?: number; // optional i64 (unix timestamp)
+  maxTeams: number; // u8 in the IDL
+  registeredTeams: PublicKey[]; // Vector of team public keys
+  matches: TournamentMatch[]; // Tournament matches 
+  status: TournamentStatus; // Current tournament status
+  createdAt: number; // i64 in the IDL (unix timestamp)
+  ended?: boolean; // Additional field for convenience
+}
+
+// Helper function to convert lamports (or other large numbers) from chain to a regular number
+export function lamportsToSol(lamports: number | bigint): number {
+  if (typeof lamports === 'bigint') {
+    return Number(lamports) / 1_000_000_000;
+  }
+  return lamports / 1_000_000_000;
+}
+
+// Helper function to convert SOL to lamports for sending to the chain
+export function solToLamports(sol: number): number {
+  return Math.round(sol * 1_000_000_000);
+}

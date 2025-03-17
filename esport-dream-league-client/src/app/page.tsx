@@ -46,8 +46,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="text-xl font-bold text-yellow-500 mr-2">ESPORT</div>
-              <div className="text-xl font-bold text-blue-400">DREAM LEAGUE</div>
+              <div className="text-xl font-bold text-yellow-500 mr-2">5VS5</div>
+              <div className="text-xl font-bold text-blue-400">dotGG</div>
             </div>
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="text-blue-400 font-semibold">Home</Link>
@@ -163,7 +163,7 @@ export default function HomePage() {
             </div>
             
             <div className="relative z-10 max-w-2xl">
-              <h1 className="text-4xl font-bold mb-3">Welcome to Esport Dream League</h1>
+              <h1 className="text-4xl font-bold mb-3">Welcome to 5vs5.GG</h1>
               <p className="text-xl mb-6 text-blue-100">
                 Build your dream esports team, compete in tournaments, and rise to the top in this blockchain-powered esports simulation.
               </p>

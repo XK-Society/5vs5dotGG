@@ -10,7 +10,7 @@ import ClientOnly from '@/components/ClientOnly';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Esport Dream League',
+  title: '5vs5.GG',
   description: 'Blockchain-based esports management simulation',
 };
 

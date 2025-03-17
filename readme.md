@@ -1,17 +1,22 @@
-# Esport Dream League
+Based on the original README and the changes we've made, here's an enhanced version for the 5vs5.gg project:
+
+# 5vs5.gg
 
 A blockchain-based esports management simulation where players collect athlete NFTs, form teams, and compete in AI-driven tournaments.
 
 
 ## Overview
 
-Esport Dream League combines NFT collectibles with AI match simulation to create an immersive esports management experience. The platform allows users to:
+5vs5.gg combines NFT collectibles with AI match simulation to create an immersive esports management experience. The platform allows users to:
 
 - Collect and train esports athlete NFTs
 - Form teams with complementary player skills
 - Compete in tournaments against other users
 - Earn rewards through victories and progression
 - Create exclusive athletes as verified creators
+
+## Game contract link
+https://explorer.sonic.game/address/2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ?cluster=testnet.v1
 
 ## Architecture
 
@@ -27,6 +32,7 @@ The project uses a hybrid architecture that combines Solana blockchain for NFTs 
 
 #### Off-Chain Components
 - **Match Simulation Engine**: JavaScript-based simulation that processes player and team data
+- **Tournament Commentator**: Real-time commentary system with excitement levels and text-to-speech capability
 - **Web & Mobile Interface**: React-based UI for managing NFTs, teams, and tournaments
 
 ## Getting Started
@@ -41,8 +47,8 @@ The project uses a hybrid architecture that combines Solana blockchain for NFTs 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/esport-dream-league.git
-cd esport-dream-league
+git clone https://github.com/your-org/5vs5-gg.git
+cd 5vs5-gg
 
 # Install dependencies
 yarn install
@@ -50,12 +56,20 @@ yarn install
 # Build the Solana program
 anchor build
 
-# Deploy to localnet
-anchor deploy
+# Deploy to Sonic testnet
+anchor deploy --provider.cluster https://api.testnet.sonic.game/
 
 # Start the frontend
 cd app
-yarn start
+yarn dev
+```
+
+### Connect to Sonic Testnet
+
+5vs5.gg connects to the Sonic testnet by default. Make sure your wallet is configured to use this network:
+
+```
+RPC URL: https://api.testnet.sonic.game/
 ```
 
 ## Smart Contract Overview
@@ -151,6 +165,24 @@ The Match Simulation Engine uses JavaScript to process player and team metadata 
 4. Produces commentary and statistics
 5. Generates metadata updates for blockchain transactions
 
+### Tournament Commentary System
+
+The platform includes a sophisticated commentary system that:
+
+1. Provides real-time match commentary with varying excitement levels
+2. Uses Web Speech API for dynamic text-to-speech
+3. Reacts to in-game events with appropriate analysis
+4. Highlights key moments and player performances
+
+## Demo Mode
+
+For demonstration purposes, the platform includes a simulation demo that can be accessed at `/demo-simulation`. This allows users to:
+
+1. View tournament brackets and team matchups
+2. Watch single match simulations with live commentary
+3. Explore the full tournament simulation experience
+4. Test the system without blockchain interactions
+
 ## API Reference
 
 ### Player Management
@@ -204,16 +236,16 @@ create_exclusive_athlete(name, position, uri, predefined_stats)
 
 ## Development Roadmap
 
-### Phase 1: Core System (Current)
+### Phase 1: Core System (Completed)
 - Player NFT framework
 - Team management
 - Basic tournament structure
 - Simulation engine prototype
 
-### Phase 2: Enhanced Gameplay
+### Phase 2: Enhanced Gameplay (Current)
 - Advanced tournament system
+- Tournament match simulation with commentary
 - Creator exclusive athletes
-- Upgraded simulation engine
 - Performance analytics
 
 ### Phase 3: Economy & Scale
@@ -239,5 +271,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - [Solana](https://solana.com/)
+- [Sonic Chain](https://www.sonic.game/)
 - [Metaplex](https://www.metaplex.com/)
 - [Anchor Framework](https://project-serum.github.io/anchor/)
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)

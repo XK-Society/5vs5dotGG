@@ -25,12 +25,16 @@ export function useTeamOperations() {
   const { program } = useProgram();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Team account cache
+  // Team account cache - using team pubkey string as the key
   const teamAccountCache = useRef<Map<string, CacheEntry<TeamAccount>>>(new Map());
+  
+  // Active fetch tracking to prevent duplicate concurrent fetches for the same team
+  const activeFetches = useRef<Map<string, Promise<TeamAccount | null>>>(new Map());
 
   // Function to clear cache
   const clearCache = useCallback(() => {
     teamAccountCache.current.clear();
+    activeFetches.current.clear();
     console.log("Team account cache cleared");
   }, []);
 
@@ -59,7 +63,7 @@ export function useTeamOperations() {
     });
   }, []);
 
-  // Create team function (unchanged)
+  // Create team function
   const createTeam = async (name: string, logoUri: string) => {
     if (!program || !publicKey) return;
 
@@ -194,6 +198,7 @@ export function useTeamOperations() {
 
       // Invalidate cache after player removal
       teamAccountCache.current.delete(teamPDA.toString());
+      activeFetches.current.delete(teamPDA.toString());
       
       toast.success('Player removed from team!');
       return true;
@@ -206,52 +211,76 @@ export function useTeamOperations() {
     }
   };
 
-  // Optimized Team Account Fetching with Cache
+  // Optimized Team Account Fetching with cache and active fetch tracking
   const fetchTeamAccount = useCallback(async (teamPDA: PublicKey, retries = 3, initialDelay = 300): Promise<TeamAccount | null> => {
     if (!program) return null;
     
+    const teamPDAString = teamPDA.toString();
+    
     // Check if we have this team in cache
-    const cachedTeam = getFromCache(teamPDA.toString());
+    const cachedTeam = getFromCache(teamPDAString);
     if (cachedTeam) {
-      console.log("Returning cached team data for:", teamPDA.toString());
+      console.log("Returning cached team data for:", teamPDAString);
       return cachedTeam;
     }
     
-    console.log("Cache miss for team:", teamPDA.toString());
-    
-    // Not in cache, fetch from blockchain
-    let currentRetry = 0;
-    let delay = initialDelay;
-  
-    while (currentRetry <= retries) {
-      try {
-        const rawAccount = await program.account.teamAccount.fetch(teamPDA);
-        
-        // Create properly formatted account
-        const teamAccount = {
-          ...rawAccount,
-          publicKey: teamPDA,
-          logoUri: (rawAccount as any).logoUri || '/images/placeholder-team-logo.png',
-        } as TeamAccount;
-        
-        // Add to cache
-        addToCache(teamPDA.toString(), teamAccount);
-        
-        return teamAccount;
-      } catch (error: any) {
-        const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
-        if (currentRetry >= retries || !isRateLimitError) {
-          console.error('Error fetching team account:', error);
-          return null;
-        }
-        console.log(`Rate limit hit, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
-        await sleep(delay);
-        delay *= 2;
-        currentRetry++;
-      }
+    // Check if there's already an active fetch for this team
+    if (activeFetches.current.has(teamPDAString)) {
+      console.log("Reusing in-progress team fetch for:", teamPDAString);
+      // Add non-null assertion to handle TypeScript type issue
+      return activeFetches.current.get(teamPDAString)!;
     }
-  
-    return null;
+    
+    console.log("Cache miss for team, initiating fetch:", teamPDAString);
+    
+    // Create the fetch promise
+    const fetchPromise = (async () => {
+      let currentRetry = 0;
+      let delay = initialDelay;
+    
+      while (currentRetry <= retries) {
+        try {
+          const rawAccount = await program.account.teamAccount.fetch(teamPDA);
+          
+          // Create properly formatted account
+          const teamAccount = {
+            ...rawAccount,
+            publicKey: teamPDA,
+            logoUri: (rawAccount as any).logoUri || '/images/placeholder-team-logo.png',
+          } as TeamAccount;
+          
+          // Add to cache
+          addToCache(teamPDAString, teamAccount);
+          
+          // Remove from active fetches before returning
+          activeFetches.current.delete(teamPDAString);
+          
+          return teamAccount;
+        } catch (error: any) {
+          const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
+          if (currentRetry >= retries || !isRateLimitError) {
+            console.error('Error fetching team account:', error);
+            
+            // Remove from active fetches on error
+            activeFetches.current.delete(teamPDAString);
+            return null;
+          }
+          console.log(`Rate limit hit, retrying after ${delay}ms... (${currentRetry + 1}/${retries})`);
+          await sleep(delay);
+          delay *= 2;
+          currentRetry++;
+        }
+      }
+      
+      // Remove from active fetches if we exit the loop
+      activeFetches.current.delete(teamPDAString);
+      return null;
+    })();
+    
+    // Store the promise in the active fetches
+    activeFetches.current.set(teamPDAString, fetchPromise);
+    
+    return fetchPromise;
   }, [program, getFromCache, addToCache]);
 
   // Fetch user teams with caching
@@ -321,7 +350,9 @@ export function useTeamOperations() {
         };
       });
     } catch (error: any) {
-      const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
+      const isRateLimitError = error?.message?.includes('429') || 
+                               error?.toString()?.includes('429') ||
+                               error?.toString()?.includes('Too many requests');
 
       if (isRateLimitError) {
         toast.error('Rate limit exceeded. Please try again later.');

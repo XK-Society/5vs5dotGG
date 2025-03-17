@@ -1,7 +1,7 @@
 'use client';
 
-import { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
+import { FC, ReactNode, createContext, useContext, useMemo, useCallback } from 'react';
+import { useAnchorWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { IDL } from '../types/esports-manager';
@@ -10,7 +10,7 @@ import { solanaConnection } from '@/services/connection-service';
 // Program ID from your deployed contract
 export const PROGRAM_ID = new PublicKey("2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ");
 
-// Helper functions to find PDAs
+// Helper functions to find PDAs (unchanged)
 export const findPlayerPDA = (mintPublicKey: PublicKey) => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from('player'), mintPublicKey.toBuffer()],
@@ -45,6 +45,7 @@ type ProgramContextType = {
   provider: AnchorProvider | null;
   isConnected: boolean;
   clearCache: () => void;
+  switchEndpoint: () => void;
 };
 
 const ProgramContext = createContext<ProgramContextType>({
@@ -52,6 +53,7 @@ const ProgramContext = createContext<ProgramContextType>({
   provider: null,
   isConnected: false,
   clearCache: () => {},
+  switchEndpoint: () => {},
 });
 
 export const useProgram = () => useContext(ProgramContext);
@@ -62,12 +64,18 @@ interface ProgramProviderProps {
 }
 
 export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
-  const { connection } = useConnection(); // Keep this for compatibility
   const wallet = useAnchorWallet();
   
-  // Use the enhanced connection service instead of the default connection
-  const enhancedConnection = solanaConnection.getConnection();
-
+  // Create stable callback functions
+  const clearCache = useCallback(() => {
+    solanaConnection.clearCache();
+  }, []);
+  
+  const switchEndpoint = useCallback(() => {
+    solanaConnection.switchEndpoint();
+  }, []);
+  
+  // Create program and provider with proper error handling
   const { program, provider, isConnected } = useMemo(() => {
     if (!wallet) {
       return {
@@ -78,11 +86,17 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
     }
   
     try {
-      // Create the provider with enhanced connection
+      // Get the connection from the service
+      const connection = solanaConnection.getConnection();
+      
+      // Create the provider with consistent commitment settings
       const provider = new AnchorProvider(
-        enhancedConnection,
+        connection,
         wallet,
-        { preflightCommitment: 'processed' }
+        { 
+          preflightCommitment: 'confirmed',  // Match the connection's commitment
+          commitment: 'confirmed'
+        }
       );
   
       // Create the program
@@ -105,15 +119,19 @@ export const ProgramProvider: FC<ProgramProviderProps> = ({ children }) => {
         isConnected: false,
       };
     }
-  }, [enhancedConnection, wallet]);
+  }, [wallet]);
   
-  // Function to clear the connection service cache
-  const clearCache = () => {
-    solanaConnection.clearCache();
-  };
+  // Create a stable context value object
+  const contextValue = useMemo(() => ({
+    program,
+    provider,
+    isConnected,
+    clearCache,
+    switchEndpoint
+  }), [program, provider, isConnected, clearCache, switchEndpoint]);
 
   return (
-    <ProgramContext.Provider value={{ program, provider, isConnected, clearCache }}>
+    <ProgramContext.Provider value={contextValue}>
       {children}
     </ProgramContext.Provider>
   );

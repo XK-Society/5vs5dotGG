@@ -3,16 +3,11 @@
 import { WalletError } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import dynamic from 'next/dynamic';
 import { ReactNode, useCallback, useMemo } from 'react';
 import { ProgramProvider } from '@/contexts/ProgramContextProvider';
-import { Connection } from '@solana/web3.js';
-
-// Don't try to import the CSS file that doesn't exist
+import { solanaConnection } from '@/services/connection-service';
 
 export const WalletButton = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -20,27 +15,11 @@ export const WalletButton = dynamic(
 );
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
-  // We use a fixed endpoint for devnet with custom configuration
-  const endpoint = 'https://rpc.ankr.com/solana_devnet/859e3dfc5fea2edd45e9dd3fd2748eee4daa40a8a5281a967b0d3d08e87afafe';
+  // Use connection from your service instead of creating a new one
+  const connection = useMemo(() => solanaConnection.getConnection(), []);
   
-  // Custom connection configuration to handle rate limiting
-  const connection = useMemo(() => {
-    return new Connection(endpoint, {
-      commitment: 'confirmed',
-      confirmTransactionInitialTimeout: 60000, // 60 seconds
-      disableRetryOnRateLimit: false, // Enable built-in retry on rate limit
-      // Lower the request batch size to reduce rate limit issues
-      fetch: (url, options) => {
-        return fetch(url, {
-          ...options,
-          headers: {
-            ...options?.headers,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
-    });
-  }, []);
+  // Get the endpoint from the connection for ConnectionProvider
+  const endpoint = connection.rpcEndpoint;
   
   const wallets = useMemo(
     () => [
@@ -52,6 +31,10 @@ export function SolanaProvider({ children }: { children: ReactNode }) {
 
   const onError = useCallback((error: WalletError) => {
     console.error(error);
+    // Consider adding error handling that might switch endpoints on certain errors
+    if (error.message.includes('429') || error.message.includes('rate limit')) {
+      solanaConnection.switchEndpoint();
+    }
   }, []);
 
   return (

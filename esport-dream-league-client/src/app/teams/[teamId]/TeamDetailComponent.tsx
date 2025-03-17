@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletConnectButton } from '@/components/WalletConnectButton';
 import { useTeamOperations } from '@/hooks/useTeamOperations';
@@ -31,8 +31,24 @@ function SafeImage({
   const [error, setError] = useState(false);
   const initial = (alt || '?').charAt(0).toUpperCase();
 
-  // If source is invalid or error occurred, show fallback
-  if (!src || !src.startsWith('http') || error) {
+  // Process the image src to ensure it's valid
+  const imageSrc = useMemo(() => {
+    if (!src) return '/images/placeholder-team-logo.png';
+    
+    // If it's already a full URL, use it
+    if (src.startsWith('http') || src.startsWith('https')) return src;
+    
+    // If it might be an Arweave ID without https://, assume it's a local path
+    if (src.startsWith('arweave.net/')) return `/images/placeholder-team-logo.png`;
+    
+    // If it's a local path that doesn't start with /, add it
+    if (!src.startsWith('/')) return `/${src}`;
+    
+    return src;
+  }, [src]);
+
+  // If loading error occurred, show fallback
+  if (error) {
     return (
       <div className={`flex items-center justify-center h-full w-full bg-blue-100 text-blue-600 text-xl font-bold ${className}`}>
         {initial}
@@ -43,7 +59,7 @@ function SafeImage({
   // Otherwise try to load the image
   return (
     <Image
-      src={src}
+      src={imageSrc}
       alt={alt}
       className={className}
       fill={fill}
@@ -63,38 +79,53 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   
-  // Keep track of whether we've already loaded the team
-  const hasLoadedTeam = useRef(false);
+  // Keep track of loaded team IDs and loading state to prevent redundant fetches
+  const loadedTeamIds = useRef(new Set<string>());
+  const isLoadingRef = useRef(false);
 
   // Helper function to find player PDAs
-  const findPlayerPDA = (mintPublicKey: PublicKey) => {
+  const findPlayerPDA = useCallback((mintPublicKey: PublicKey) => {
     return PublicKey.findProgramAddressSync(
       [Buffer.from('player'), mintPublicKey.toBuffer()],
       new PublicKey('2KBakNVa6xLxp6uQsgHhikrknw1pkjkS2f6ZGKtV5BzZ') // Your program ID
     );
-  };
+  }, []);
 
-  // Memoize the loadTeam function to prevent unnecessary re-renders
+  // Memoize the loadTeam function without including 'team' in dependencies
   const loadTeam = useCallback(async () => {
+    // Use ref to prevent concurrent loadings
+    if (isLoadingRef.current) return;
+    if (!teamId) return;
+    
+    // Skip loading if we've already loaded this teamId
+    if (loadedTeamIds.current.has(teamId)) {
+      setLoading(false);
+      return;
+    }
+    
     try {
+      isLoadingRef.current = true;
       setLoading(true);
-      if (!teamId) return;
-      
-      // Skip loading if we've already done it
-      if (hasLoadedTeam.current && team) {
-        setLoading(false);
-        return;
-      }
       
       console.log("Loading team data for:", teamId);
       const teamPDA = new PublicKey(teamId);
       const teamAccount = await fetchTeamAccount(teamPDA);
       
       if (teamAccount) {
+        // Process logo URI to ensure it's valid
+        let logoUri = '/images/placeholder-team-logo.png';
+        if (teamAccount.logoUri) {
+          if (teamAccount.logoUri.startsWith('http') || teamAccount.logoUri.startsWith('/')) {
+            logoUri = teamAccount.logoUri;
+          } else if (teamAccount.logoUri.startsWith('images/')) {
+            logoUri = `/${teamAccount.logoUri}`;
+          }
+        }
+
         // Ensure all required properties are present
         const safeTeamAccount: TeamAccount = {
           ...teamAccount,
-          logoUri: teamAccount.logoUri || '/images/placeholder-team-logo.png',
+          logoUri: logoUri,
           roster: teamAccount.roster || [],
           statistics: teamAccount.statistics || {
             matchesPlayed: 0,
@@ -112,57 +143,77 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
         setTeam(safeTeamAccount);
         
         // Check if current user is the team owner
-        setIsOwner(publicKey ? publicKey.equals(teamAccount.owner) : false);
+        if (publicKey) {
+          setIsOwner(publicKey.equals(teamAccount.owner));
+        }
         
         // Fetch detailed player info for each player in the roster
         if (safeTeamAccount.roster && safeTeamAccount.roster.length > 0) {
           console.log("Loading players for team:", teamId);
-          const playerDetails = await Promise.all(
-            safeTeamAccount.roster.map(async (position: RosterPosition) => {
-              try {
-                const [playerPDA] = findPlayerPDA(position.playerMint);
-                const playerAccount = await fetchPlayerAccount(playerPDA);
+          const playerPromises = safeTeamAccount.roster.map(async (position: RosterPosition) => {
+            try {
+              const [playerPDA] = findPlayerPDA(position.playerMint);
+              const playerAccount = await fetchPlayerAccount(playerPDA);
+              if (playerAccount) {
                 return {
                   ...playerAccount,
                   publicKey: playerPDA,
                   position: position.position,
                 } as PlayerAccount;
-              } catch (error) {
-                console.error('Error fetching player:', error);
-                return null;
               }
-            })
-          );
+              return null;
+            } catch (error) {
+              console.error('Error fetching player:', error);
+              return null;
+            }
+          });
           
-          setPlayers(playerDetails.filter(Boolean) as PlayerAccount[]);
+          const playerDetails = await Promise.all(playerPromises);
+          const validPlayers = playerDetails.filter(Boolean) as PlayerAccount[];
+          setPlayers(validPlayers);
+        } else {
+          setPlayers([]);
         }
         
-        // Mark that we've loaded the team
-        hasLoadedTeam.current = true;
+        // Mark that we've loaded this team ID
+        loadedTeamIds.current.add(teamId);
       }
     } catch (error) {
       console.error('Error loading team details:', error);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [teamId, publicKey, fetchTeamAccount, fetchPlayerAccount, team]);
+  }, [teamId, publicKey, fetchTeamAccount, fetchPlayerAccount, findPlayerPDA]);
 
+  // Only run when the component mounts or teamId changes
   useEffect(() => {
-    loadTeam();
+    // Reset loading state when teamId changes
+    setLoading(true);
     
-    // Reset the loaded flag when teamId changes
+    // Only load if not already loaded
+    if (!loadedTeamIds.current.has(teamId)) {
+      loadTeam();
+    } else {
+      setLoading(false);
+    }
+    
+    // Clean up function to clear the loaded flag when component unmounts or teamId changes
     return () => {
-      hasLoadedTeam.current = false;
+      // Only clean up the specific teamId being unmounted
+      if (teamId) {
+        loadedTeamIds.current.delete(teamId);
+      }
     };
-  }, [loadTeam]);
+  }, [teamId, loadTeam]);
 
   const handlePlayerSelected = async (playerMint: PublicKey, position: string) => {
-    if (!team) return;
+    if (!team || !team.publicKey) return;
     
-    const success = await addPlayerToTeam(team.publicKey!, playerMint, position);
+    const success = await addPlayerToTeam(team.publicKey, playerMint, position);
     if (success) {
-      // Reset loaded flag to force reload
-      hasLoadedTeam.current = false;
+      // Remove the teamId from loaded set to force reload
+      loadedTeamIds.current.delete(teamId);
       // Reload the team data
       await loadTeam();
       // Close the modal
@@ -171,15 +222,15 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
   };
 
   const handleRemovePlayer = async (playerMint: PublicKey) => {
-    if (!team) return;
+    if (!team || !team.publicKey) return;
     
     const confirmed = window.confirm('Are you sure you want to remove this player from the team?');
     if (!confirmed) return;
     
-    const success = await removePlayerFromTeam(team.publicKey!, playerMint);
+    const success = await removePlayerFromTeam(team.publicKey, playerMint);
     if (success) {
-      // Reset loaded flag to force reload
-      hasLoadedTeam.current = false;
+      // Remove the teamId from loaded set to force reload
+      loadedTeamIds.current.delete(teamId);
       // Reload the team data
       await loadTeam();
     }
@@ -190,6 +241,12 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
     return (
       <div className="min-h-screen bg-gray-100 py-6 px-6">
         <div className="mb-6">
+          <Link href="/teams" className="flex items-center text-blue-600 hover:text-blue-800 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            <span>Back to Teams</span>
+          </Link>
           <WalletConnectButton />
         </div>
         <div className="max-w-7xl mx-auto">
@@ -206,6 +263,12 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
     return (
       <div className="min-h-screen bg-gray-100 py-6 px-6">
         <div className="mb-6">
+          <Link href="/teams" className="flex items-center text-blue-600 hover:text-blue-800 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            <span>Back to Teams</span>
+          </Link>
           <WalletConnectButton />
         </div>
         <div className="max-w-7xl mx-auto">
@@ -313,7 +376,7 @@ export default function TeamDetailComponent({ teamId }: TeamDetailComponentProps
             <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold mb-4">Team Roster ({team.roster?.length || 0}/5)</h2>
               
-              {team.roster?.length === 0 ? (
+              {!team.roster || team.roster.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No players on the roster yet.</p>
                   {isOwner && (

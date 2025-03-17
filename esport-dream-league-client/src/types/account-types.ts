@@ -33,16 +33,16 @@ export interface TournamentMatch {
 
 // Team Account Type
 export interface TeamAccount {
-  owner: PublicKey;
+  publicKey?: PublicKey; // PDA of the team
+  owner: PublicKey; // Team owner wallet
   name: string;
-  collectionMint?: PublicKey;
-  logoUri: string;
+  collectionMint?: PublicKey; // NFT collection mint (optional)
+  logoUri: string; // Ensure this is explicitly defined
   createdAt: number;
   lastUpdated: number;
-  roster: RosterPosition[];
+  roster: RosterPosition[]; // Players in the team
   statistics: TeamStatistics;
   matchHistory?: TeamMatchResult[];
-  publicKey?: PublicKey; // Add this for convenience
 }
 
 // Reuse your existing types or define them here

@@ -5,6 +5,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useProgram, findTeamPDA, findPlayerPDA } from '@/contexts/ProgramContextProvider';
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { toast } from 'react-toastify';
+import { TeamAccount } from '@/types/program-types';
 
 // Helper to add delay between requests
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -119,15 +120,22 @@ export function useTeamOperations() {
   };
 
   // Improved Team Account Fetching with Exponential Backoff
-  const fetchTeamAccount = async (teamPDA: PublicKey, retries = 3, initialDelay = 300) => {
+  const fetchTeamAccount = async (teamPDA: PublicKey, retries = 3, initialDelay = 300): Promise<TeamAccount | null> => {
     if (!program) return null;
-
+  
     let currentRetry = 0;
     let delay = initialDelay;
-
+  
     while (currentRetry <= retries) {
       try {
-        return await program.account.teamAccount.fetch(teamPDA);
+        const rawAccount = await program.account.teamAccount.fetch(teamPDA);
+        
+        // Explicitly cast and ensure logoUri
+        return {
+          ...rawAccount,
+          publicKey: teamPDA,
+          logoUri: rawAccount.logoUri || '/placeholder-team-logo.png',
+        } as TeamAccount;
       } catch (error: any) {
         const isRateLimitError = error?.message?.includes('429') || error?.toString()?.includes('Too many requests');
         if (currentRetry >= retries || !isRateLimitError) {
@@ -140,12 +148,15 @@ export function useTeamOperations() {
         currentRetry++;
       }
     }
-
+  
     return null;
   };
 
   // ✅ Improved fetchUserTeams function to prevent infinite re-fetching
-  const fetchUserTeams = async () => {
+  const fetchUserTeams = async (): Promise<{
+    publicKey: PublicKey;
+    account: TeamAccount;
+  }[]> => {
     if (!program || !publicKey) return [];
 
     try {
@@ -162,16 +173,20 @@ export function useTeamOperations() {
 
       console.log("Fetched teams:", teams.length);
 
-      // ✅ Ensure each team has a publicKey field
+      // Map teams to ensure type safety and provide default logo
       return teams.map((team) => ({
-        ...team,
-        publicKey: team.publicKey, // Add the publicKey manually
+        publicKey: team.publicKey,
+        account: {
+          ...team.account,
+          logoUri: team.account.logoUri || '/placeholder-team-logo.png',
+        } as TeamAccount
       }));
     } catch (error) {
       console.error('Error fetching user teams:', error);
       return [];
     }
   };
+
 
   const fetchAllTeams = async () => {
     if (!program) return [];

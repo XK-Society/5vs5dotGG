@@ -1,4 +1,3 @@
-// src/components/SafeImage.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,7 +12,8 @@ interface SafeImageProps {
   height?: number;
 }
 
-const DEFAULT_TEAM_LOGO = 'https://via.placeholder.com/150';
+// Use a local placeholder image in the public folder
+const DEFAULT_TEAM_LOGO = '/placeholder-team-logo.png';
 
 export const SafeImage = ({ 
   src, 
@@ -23,10 +23,12 @@ export const SafeImage = ({
   width,
   height 
 }: SafeImageProps) => {
-  const [imageSrc, setImageSrc] = useState<string>(src || DEFAULT_TEAM_LOGO);
+  const [imageSrc, setImageSrc] = useState<string>(
+    src && src.startsWith('http') ? src : DEFAULT_TEAM_LOGO
+  );
 
   const handleError = () => {
-    setImageSrc(DEFAULT_TEAM_LOGO); // ✅ Force fallback when image fails
+    setImageSrc(DEFAULT_TEAM_LOGO);
   };
 
   if (fill) {

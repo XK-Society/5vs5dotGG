@@ -126,15 +126,15 @@ export type PlayerAccount = {
   isExclusive: boolean;
 };
 
-export type TeamAccount = {
+export interface TeamAccount {
   publicKey?: PublicKey; // PDA of the team
   owner: PublicKey; // Team owner wallet
   name: string;
   collectionMint?: PublicKey; // NFT collection mint (optional)
-  logoUri: string;
+  logoUri?: string; // Make it optional
   createdAt: number;
   lastUpdated: number;
   roster: RosterPosition[]; // Players in the team
   statistics: TeamStatistics;
   matchHistory?: TeamMatchResult[];
-};
+}
